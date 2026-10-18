@@ -154,10 +154,21 @@ namespace cAlgo.Robots
 
             // Risk budget is recalculated from current equity on every potential entry.
             double maximumAllowedLoss = equity * allowedRiskPercent / 100.0;
-            double riskSizingPips = stopPips + Math.Max(0.0, SizingSlippageReservePips);
-            if (!IsFinitePositive(maximumAllowedLoss) || !IsFinitePositive(riskSizingPips))
+            double stopAndSlippagePips = stopPips + Math.Max(0.0, SizingSlippageReservePips);
+            if (!IsFinitePositive(maximumAllowedLoss) || !IsFinitePositive(stopAndSlippagePips))
             {
                 ReportEntryBlocked("risk budget or stop-loss pip estimate is invalid", true);
+                return;
+            }
+
+            // Verify the broker's commission schedule and account-currency conversion before
+            // calculating volume. Unknown transaction costs must not silently become zero.
+            double minimumVolumeRisk = EstimateTotalEntryLoss(
+                Symbol.VolumeInUnitsMin, stopAndSlippagePips, entryReference);
+            if (!IsFinitePositive(minimumVolumeRisk))
+            {
+                SetVolumeNotice("Entry skipped: full downside risk could not be estimated, including broker round-turn commission and account-currency conversion.", true);
+                ReportEntryBlocked("broker commission or currency conversion is unavailable for a reliable risk estimate", true);
                 return;
             }
 
@@ -176,16 +187,13 @@ namespace cAlgo.Robots
                     return;
                 }
 
-                double lossAtMarginLimit = Symbol.AmountRisked(marginLimitedUnits, riskSizingPips);
-                if (!IsFinitePositive(lossAtMarginLimit))
-                    return;
-
-                double riskLimitedUnits = marginLimitedUnits * Math.Min(1.0, maximumAllowedLoss / lossAtMarginLimit);
-                volume = Symbol.NormalizeVolumeInUnits(riskLimitedUnits, RoundingMode.Down);
+                volume = GetMaximumVolumeWithinRiskBudget(
+                    signal.Value, marginLimitedUnits, maximumAllowedLoss,
+                    stopAndSlippagePips, entryReference);
                 double minAutoUnits = Symbol.NormalizeVolumeInUnits(Symbol.QuantityToVolumeInUnits(MinimumAutoVolumeLots), RoundingMode.Up);
                 if (volume < Math.Max(Symbol.VolumeInUnitsMin, minAutoUnits))
                 {
-                    SetVolumeNotice("Auto mode: stop distance and risk limit do not support the configured minimum volume.", true);
+                    SetVolumeNotice("Auto mode: stop distance, slippage reserve, broker commission and risk budget do not support the configured minimum volume.", true);
                     return;
                 }
             }
@@ -208,13 +216,16 @@ namespace cAlgo.Robots
                 }
             }
 
-            double estimatedLoss = Symbol.AmountRisked(volume, riskSizingPips);
+            double estimatedLoss = EstimateTotalEntryLoss(volume, stopAndSlippagePips, entryReference);
             if (!IsFinitePositive(estimatedLoss))
+            {
+                SetVolumeNotice("Entry skipped: stop risk plus round-turn commission could not be estimated reliably.", true);
                 return;
+            }
             if (estimatedLoss > maximumAllowedLoss * 1.001)
             {
                 SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
-                    "Entry skipped: selected/calculated volume risks about {0:F2} {1}, above this setup's {2:F2} risk budget.",
+                    "Entry skipped: estimated stop, slippage and round-turn commission risk is {0:F2} {1}, above this setup's {2:F2} budget.",
                     estimatedLoss, Account.Asset.Name, maximumAllowedLoss), true);
                 return;
             }
@@ -235,10 +246,10 @@ namespace cAlgo.Robots
             }
 
             ReportEntryStatus(String.Format(CultureInfo.InvariantCulture,
-                "qualified: {0:F2} lots; estimated risk {1:F2} {2}",
+                "qualified: {0:F2} lots; estimated stop + slippage + round-turn commission risk {1:F2} {2}",
                 Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name));
             SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
-                "Ready: {0:F2} lots | estimated SL risk {1:F2} {2} | required margin {3:F2}.",
+                "Ready: {0:F2} lots | estimated stop + slippage + round-turn commission risk {1:F2} {2} | required margin {3:F2}.",
                 Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name, requiredMargin), false);
 
             string comment = "M5+" + LowerEntryTimeframe.ToString() + " precision | " + _runtimeVolumeMode.ToString() + " | TP guide only";
