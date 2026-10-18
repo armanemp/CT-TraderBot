@@ -55,3 +55,8 @@ The chart now has a separate, rate-limited entry-status line for common veto rea
 ## Current module boundaries
 
 Entry execution, signal detection, structure, quality scoring, initial protection, BE/trailing and stop-price rules are now in separate partial-class files. This is a code-organization change; CI revalidated the unchanged 69-test suite at commit `226d7bb`. It does not replace demo acceptance.
+
+
+## Protective stop geometry tests
+
+`CTTraderBot.Core.Policies.ProtectiveStopPolicy` covers long/short loss-side checks, initial vs tightening tick rounding, broker min-distance conversion from pips/percentage, safety-tick handling, and monotonic stop selection. These tests validate pure numeric rules only; broker acceptance still requires cTrader demo tests.

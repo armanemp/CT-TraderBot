@@ -115,3 +115,8 @@ Code commit `8aecbef` adds a separate, rate-limited entry-status line for common
 ## Current source layout validation
 
 The entry and protection responsibilities are now split across named partial-class modules (execution, signal, structure, quality, entry diagnostics, initial protection, BE/trailing, and stop-price rules). CI at commit `226d7bb` passed with 69/69 tests and no warnings/errors. This is not proof of trading performance; local build, demo execution and out-of-sample evidence remain required.
+
+
+## Audit addendum — protective stop geometry
+
+A new core policy isolates the stop-side predicate, broker minimum-distance calculation, price tick normalization and monotonic more-protective-stop selection. It now has deterministic numeric tests for both directions and invalid inputs. CI/local validation pending. This does not simulate broker-side SL acceptance/rejection.

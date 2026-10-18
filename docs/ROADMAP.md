@@ -119,3 +119,7 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 - [x] Split entry execution, signal, structure and scoring methods into separate partial-class modules without changing method bodies. Windows CI passed at `226d7bb` with 69/69 tests and 0 warnings/errors.
 - [x] Split initial protection, BE/trailing and stop-price geometry into separate partial-class modules; same CI result.
 - [ ] Run `scripts/build-cbot.ps1` locally on the current head and perform cTrader demo acceptance for broker/storage behavior.
+
+
+## Audit addendum — protective stop geometry
+- [x] Extract stop-side validation, minimum broker-distance conversion, tick normalization and monotonic stop selection into a pure core policy with deterministic long/short and invalid-input tests. This code change awaits CI/local validation.
