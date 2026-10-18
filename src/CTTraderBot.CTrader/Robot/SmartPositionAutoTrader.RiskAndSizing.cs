@@ -81,17 +81,27 @@ namespace cAlgo.Robots
 
         private double EstimateRoundTurnCommissionPips(Position position)
         {
-            if (Symbol.PipValue <= 0 || position.VolumeInUnits <= 0)
-                return 0;
+            // Missing/non-finite conversion inputs mean commission cannot be estimated; never
+            // report zero commission merely because the conversion data is invalid.
+            if (position == null ||
+                !IsFinitePositive(Symbol.PipValue) ||
+                !IsFinitePositive(position.VolumeInUnits))
+                return double.NaN;
 
             // cTrader Symbol.PipValue is expressed per unit; multiply by position volume (not lots).
             double pipValueForPosition = Symbol.PipValue * position.VolumeInUnits;
-            if (pipValueForPosition <= 0 || double.IsNaN(pipValueForPosition) || double.IsInfinity(pipValueForPosition))
-                return 0;
+            if (!IsFinitePositive(pipValueForPosition))
+                return double.NaN;
 
-            // cTrader documents Position.Commissions as the one-way commission amount associated
-            // with the position; double it to estimate a round turn, then add an execution cushion.
-            return (2.0 * Math.Abs(position.Commissions)) / pipValueForPosition;
+            double commissionAmount = Math.Abs(position.Commissions);
+            if (double.IsNaN(commissionAmount) || double.IsInfinity(commissionAmount))
+                return double.NaN;
+
+            // Commission and the configured slippage reserve are added separately by the caller.
+            double commissionPips = (2.0 * commissionAmount) / pipValueForPosition;
+            return !double.IsNaN(commissionPips) && !double.IsInfinity(commissionPips) && commissionPips >= 0.0
+                ? commissionPips
+                : double.NaN;
         }
     }
 }
