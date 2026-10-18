@@ -66,7 +66,7 @@ git pull --ff-only origin main
 .\scripts\build-cbot.ps1
 ```
 
-The build script restores and builds `CT-TraderBot.sln`, then verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
+The build script first runs `scripts/verify-cbot-contract.ps1` to compare public parameter names, types and full attributes against the legacy reference, and verify that broker TP remains explicitly null. It then restores/builds `CT-TraderBot.sln`, runs NUnit tests, and verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
 
 The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance. The current state/lease design is for local desktop cTrader: official cTrader documentation says LocalStorage Reload/Flush are unsupported no-ops in Cloud, without an error. Cloud deployment must remain unsupported until the persistence/ownership design is replaced.
 

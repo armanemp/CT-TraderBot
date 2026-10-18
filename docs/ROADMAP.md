@@ -122,7 +122,7 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 
 
 ## Audit addendum — protective stop geometry
-- [x] Extract stop-side validation, minimum broker-distance conversion, tick normalization and monotonic stop selection into `ProtectiveStopPolicy`; CI passed at `14d2711` with 87/87 tests, 0 warnings and 0 errors. Local build and broker acceptance pending.
+- [x] Extract stop-side validation, minimum broker-distance conversion, tick normalization and monotonic stop selection into `ProtectiveStopPolicy`; the latest complete CI at `56805a2` passed 87/87 tests, 0 warnings and 0 errors. Local build and broker acceptance pending.
 
 
 ## Audit addendum — verified protective-stop policy
@@ -132,4 +132,5 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 
 ## Audit addendum — source contract gate
 - [x] Add scripts/verify-cbot-contract.ps1 to compare legacy/current public parameter contracts and protect the chart-only TP order contract.
-- [ ] Validate the new gate in CI and in the user's next local build.
+- [x] Windows CI at commit `56805a2` passed the source-contract gate (67 reference parameters preserved; no extra current parameters; broker TP null) and the complete Release build/test workflow: 87/87 tests, 0 warnings/errors. Run: https://github.com/armanemp/CT-TraderBot/actions/runs/39087782564.
+- [ ] User to run the current build script locally and complete cTrader demo acceptance.

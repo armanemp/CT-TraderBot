@@ -49,7 +49,7 @@ The source split is kept at responsibility boundaries:
 - Entry veto telemetry: `SmartPositionAutoTrader.EntryDiagnostics.cs`
 - Initial SL submission, BE/trailing and cTrader integration: `SmartPositionAutoTrader.InitialProtection.cs`, `SmartPositionAutoTrader.BreakEvenTrailing.cs`, `SmartPositionAutoTrader.StopPriceRules.cs`; pure numeric stop rules live in `CTTraderBot.Core.Policies.ProtectiveStopPolicy` and are covered by NUnit tests.
 
-These are partial-class adapter modules today, not all independent domain services yet. The last mechanical split moved existing methods and was compiled/tested in Windows CI at commit `226d7bb`; current local build and cTrader runtime acceptance remain separate release gates.
+These are partial-class adapter modules today, not all independent domain services yet. The entry/protection split passed Windows CI at `226d7bb`; the pure protective-stop policy then passed at `14d2711`, and the latest source-contract gate, Release build and 87 tests passed at `56805a2`. Current local build and cTrader runtime acceptance remain separate release gates.
 
 ## Migration rules
 
