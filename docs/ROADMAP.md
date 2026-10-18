@@ -5,8 +5,11 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 ## Phase 0 — Repository foundation
 **Status: In progress**
 - [x] Initialize repository conventions, architecture, and migration rules.
-- [ ] Add the exact original `.cs` file under `legacy/reference/` unchanged.
-- [ ] Record SHA-256, line count, cTrader version/API assembly version, and compiler diagnostics.
+- [x] Register a reference copy of the user-pasted cBot in `legacy/reference/SmartPositionAutoTrader_M5_MicroSwingPrecision_HedgedVolume.cs`.
+- [x] Add a pinned cTrader Automate project, solution, Windows build script, and CI workflow.
+- [ ] Compare the reference copy against the user's original local `.cs` file and record SHA-256; byte-for-byte identity has not been independently verified.
+- [ ] Record the user's installed cTrader/API version and the first real cBot compiler diagnostics.
+- [ ] Validate the automated partial-class split and compile it against the pinned Automate package.
 
 ## Phase 1 — Reproducible baseline (no behavior changes)
 - [ ] Create the cTrader project/solution using the API target actually installed.
