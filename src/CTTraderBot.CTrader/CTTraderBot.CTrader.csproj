@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>cAlgo.Robots</RootNamespace>
+    <AssemblyName>CTTraderBot</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AlgoName>CTTraderBot</AlgoName>
+    <AlgoPublish>true</AlgoPublish>
+    <IncludeSource>false</IncludeSource>
+    <IncludeSymbols>false</IncludeSymbols>
+    <!-- Buildable as a scaffold until the real Robot entry point is imported. -->
+    <AlgoBuild>false</AlgoBuild>
+    <AlgoBuild Condition="Exists('Robot/SmartPositionAutoTrader.Robot.cs')">true</AlgoBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="cTrader.Automate" Version="1.0.21" />
+    <ProjectReference Include="../CTTraderBot.Core/CTTraderBot.Core.csproj" />
+  </ItemGroup>
+</Project>
