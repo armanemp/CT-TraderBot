@@ -56,6 +56,23 @@ namespace CTTraderBot.Core.Tests.Policies
         }
 
         [Test]
+        public void StickyManualReviewCanPersistWithoutRequestingAutomaticClose()
+        {
+            PositionRiskStateRecord record = Sample();
+            record.EmergencyCloseRequired = false;
+            record.RiskBudgetUnavailable = true;
+            record.RiskReviewSticky = true;
+            record.RiskReviewRequired = true;
+
+            PositionRiskStateRecord parsed = Decode(PositionRiskStateCodec.Serialize(record));
+
+            Assert.That(parsed.RiskReviewRequired, Is.True);
+            Assert.That(parsed.RiskBudgetUnavailable, Is.True);
+            Assert.That(parsed.EmergencyCloseRequired, Is.False);
+            Assert.That(parsed.RiskReviewSticky, Is.True);
+        }
+
+        [Test]
         public void LegacyFourFieldRecordDefaultsToEstimatedRiskAndNoBudget()
         {
             PositionRiskStateRecord parsed = Decode("2400.25|4.5|Buy|639000000000000000");
@@ -139,7 +156,7 @@ namespace CTTraderBot.Core.Tests.Policies
             PositionRiskStateRecord record = Sample();
             record.ApprovedRiskAmount = double.PositiveInfinity;
             Assert.Throws<System.ArgumentException>(
-                (NUnit.Framework.TestDelegate)(() => { PositionRiskStateCodec.Serialize(record); }));
+                (System.Action)(() => { PositionRiskStateCodec.Serialize(record); }));
         }
     }
 }
