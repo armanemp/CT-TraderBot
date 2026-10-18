@@ -9,6 +9,14 @@ namespace cAlgo.Robots
 {
     public partial class SmartPositionAutoTraderM5MicroSwingPrecisionHedgedVolume
     {
+        // Fallback is used only for the gold-focused profile when the broker's commission
+        // metadata/conversion cannot be read. It is a conservative extra cash-risk reserve,
+        // not a wider broker stop. A spread-based floor protects against unusually wide quotes.
+        private const double UnknownGoldCommissionFallbackPips = 10.0;
+        private const double SmallManualRiskOverrunTolerance = 0.05;
+        private bool _lastCommissionEstimateUsedFallback;
+        private bool _commissionFallbackWarningShown;
+
         private double GetEstimatedMarginSafe(TradeType tradeType, double volumeInUnits)
         {
             if (!IsFinitePositive(volumeInUnits))
@@ -132,8 +140,51 @@ namespace cAlgo.Robots
                 return double.NaN;
 
             double roundTurnCommission = EstimateRoundTurnCommissionCash(volumeInUnits, entryPrice);
+            _lastCommissionEstimateUsedFallback = false;
+            if (!IsFiniteNonNegative(roundTurnCommission))
+            {
+                double fallbackPips = GetUnknownCommissionFallbackPips();
+                double fallbackCash = IsFinitePositive(fallbackPips)
+                    ? Symbol.AmountRisked(volumeInUnits, fallbackPips)
+                    : double.NaN;
+                roundTurnCommission = RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(
+                    roundTurnCommission, fallbackCash);
+                if (IsFiniteNonNegative(roundTurnCommission) && IsFinitePositive(fallbackPips))
+                {
+                    _lastCommissionEstimateUsedFallback = true;
+                    if (!_commissionFallbackWarningShown)
+                    {
+                        _commissionFallbackWarningShown = true;
+                        Diag("Commission metadata/conversion unavailable; using a conservative {0:F1}-pip-equivalent round-turn commission reserve for this gold-profile symbol.",
+                            fallbackPips);
+                    }
+                }
+            }
+            else
+            {
+                _commissionFallbackWarningShown = false;
+            }
+
             return RoundTurnCommissionPolicy.AddRoundTurnCommissionToLoss(
                 stopAndSlippageLoss, roundTurnCommission);
+        }
+
+        private double GetUnknownCommissionFallbackPips()
+        {
+            bool looksLikeGold =
+                SymbolName.IndexOf("XAU", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                SymbolName.IndexOf("GOLD", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!looksLikeGold || !IsFinitePositive(Symbol.PipSize))
+                return double.NaN;
+
+            double spreadPips = (Symbol.Ask - Symbol.Bid) / Symbol.PipSize;
+            if (double.IsNaN(spreadPips) || double.IsInfinity(spreadPips) || spreadPips < 0.0)
+                spreadPips = 0.0;
+
+            // Conservative floor for this gold-only strategy, increased when the live spread
+            // is unusually wide. The same configured reserve is used for entry sizing and
+            // post-fill checks; it never changes the structural stop price.
+            return Math.Max(UnknownGoldCommissionFallbackPips, 2.0 * spreadPips);
         }
 
         private double EstimateRoundTurnCommissionCash(double volumeInUnits, double entryPrice)
@@ -267,27 +318,29 @@ namespace cAlgo.Robots
 
         private double EstimateRoundTurnCommissionPips(Position position)
         {
-            // Missing/non-finite conversion inputs mean commission cannot be estimated; never
-            // report zero commission merely because the conversion data is invalid.
-            if (position == null ||
-                !IsFinitePositive(Symbol.PipValue) ||
-                !IsFinitePositive(position.VolumeInUnits))
+            if (position == null || !IsFinitePositive(position.VolumeInUnits))
                 return double.NaN;
+
+            double fallbackPips = GetUnknownCommissionFallbackPips();
+            if (!IsFinitePositive(Symbol.PipValue))
+                return fallbackPips;
 
             // cTrader Symbol.PipValue is expressed per unit; multiply by position volume (not lots).
             double pipValueForPosition = Symbol.PipValue * position.VolumeInUnits;
             if (!IsFinitePositive(pipValueForPosition))
-                return double.NaN;
+                return fallbackPips;
 
             double commissionAmount = Math.Abs(position.Commissions);
             if (double.IsNaN(commissionAmount) || double.IsInfinity(commissionAmount))
-                return double.NaN;
+                return fallbackPips;
 
-            // Commission and the configured slippage reserve are added separately by the caller.
+            // cTrader reports the charged side; estimate the round turn by doubling it.
+            // If metadata is missing/unreadable, use the same conservative gold-only pip reserve
+            // as pre-trade sizing rather than pausing fresh entries solely for a small cost estimate.
             double commissionPips = (2.0 * commissionAmount) / pipValueForPosition;
             return !double.IsNaN(commissionPips) && !double.IsInfinity(commissionPips) && commissionPips >= 0.0
                 ? commissionPips
-                : double.NaN;
+                : fallbackPips;
         }
     }
 }
