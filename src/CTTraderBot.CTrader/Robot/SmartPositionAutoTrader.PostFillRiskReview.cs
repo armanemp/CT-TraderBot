@@ -9,6 +9,32 @@ namespace cAlgo.Robots
     {
         private const double PostFillRiskToleranceFraction = 0.05;
 
+        private void FlagRiskReview(Position position, string reason)
+        {
+            if (position == null)
+                return;
+
+            PositionState state;
+            if (!_states.TryGetValue(position.Id, out state) || state == null)
+                state = GetOrCreateState(position);
+
+            if (state != null)
+            {
+                state.RiskReviewRequired = true;
+                _states[position.Id] = state;
+                // This is an exceptional crossed-stop path. Persist even if the in-memory flag
+                // was already true, so a second instance/restart cannot miss the emergency review.
+                SaveState(position, state);
+            }
+
+            _riskReviewRequiredPositionIds.Add(position.Id);
+            string notice = "RISK GUARD: " + reason +
+                ". Emergency review is required; new entries remain paused until the position closes or a valid risk assessment clears the guard.";
+            WarnThrottled(position, notice);
+            SetVolumeNotice(notice, true);
+            ReportEntryStatus("new entries paused: " + reason, true);
+        }
+
         private bool HasUsableStopLoss(Position position)
         {
             if (position == null || !position.StopLoss.HasValue ||
@@ -102,11 +128,17 @@ namespace cAlgo.Robots
             if (changed && persistChanges)
                 SaveState(position, state);
 
-            if (changed && requiresReview)
+            if (requiresReview)
             {
-                string notice = "RISK GUARD: " + reason +
-                    ". The existing broker stop is left unchanged; new entries are paused until the risk estimate returns within budget or this position is closed.";
-                WarnThrottled(position, notice);
+                string notice = "RISK GUARD: " + (string.IsNullOrEmpty(reason)
+                    ? "the approved risk budget requires review"
+                    : reason) +
+                    ". The existing broker stop is left unchanged; new entries are paused until the risk estimate returns within budget or the position closes.";
+                if (changed)
+                    WarnThrottled(position, notice);
+
+                // Keep the safety status visible even after restart, when the review flag may
+                // already be persisted and therefore unchanged in this process.
                 SetVolumeNotice(notice, true);
                 ReportEntryStatus("new entries paused: " + reason, true);
             }

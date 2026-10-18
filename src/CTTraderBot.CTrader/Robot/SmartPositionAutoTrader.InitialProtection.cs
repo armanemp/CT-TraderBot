@@ -28,12 +28,11 @@ namespace cAlgo.Robots
                 : Symbol.Ask >= desiredStop;
             if (plannedLevelAlreadyCrossed)
             {
-                WarnThrottled(position, "Price crossed the intended absolute structural SL during/just after entry. The bot will not move the stop farther away to disguise the breach.");
+                FlagRiskReview(position,
+                    "price crossed the intended absolute structural stop during/just after entry; the stop will not be widened to disguise the breach");
                 if (CloseIfInitialStopAlreadyCrossed)
                 {
                     _pendingEmergencyCloseIds.Add(position.Id);
-                    _riskReviewRequiredPositionIds.Add(position.Id);
-                    SetVolumeNotice("RISK GUARD: the intended structural stop was crossed after entry; emergency close is being retried and new entries are paused.", true);
                     TryCloseBreachedPosition(position);
                 }
                 return;
@@ -203,12 +202,13 @@ namespace cAlgo.Robots
 
             if (plannedStopAlreadyBreached)
             {
+                FlagRiskReview(position,
+                    "price crossed the intended initial stop before broker protection could be confirmed; the stop will not be widened");
+
                 if (!CloseIfInitialStopAlreadyCrossed)
                     return RetryInitialStop(position, "Price has already crossed the planned initial SL; not widening the stop. Enable emergency close or handle the position manually.");
 
                 _pendingEmergencyCloseIds.Add(position.Id);
-                _riskReviewRequiredPositionIds.Add(position.Id);
-                SetVolumeNotice("RISK GUARD: the intended initial stop was crossed before broker protection could be confirmed; emergency close is being retried and new entries are paused.", true);
                 TryCloseBreachedPosition(position);
                 return false;
             }

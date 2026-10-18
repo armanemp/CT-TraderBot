@@ -35,7 +35,8 @@ The build script runs the test suite after compiling the solution and checks the
 - Fresh intrabar crossing, price already beyond an old level on startup, spread spikes and duplicate callbacks.
 - Broker rejects SL; retry remains bounded and warning remains visible; no fresh entries occur while protection remains unconfirmed.
 - Post-fill absolute structural SL widens risk: flag persists across restart, new entries remain paused, and the guard clears only when an updated downside estimate is within 105% of the approved budget or the position closes.
-- If market price crosses the intended structural stop and an emergency close is pending/rejected, entry lock remains active on every management retry until closure is confirmed.
+- If market price crosses the intended structural stop and an emergency close is pending/rejected, entry lock remains active on every management retry until closure is confirmed; the risk-review flag is persisted before attempting the close.
+- Restart with an already-persisted risk-review flag must show the warning immediately, not only after a state transition.
 - With two same-label instances, the non-owner refreshes persisted risk review state before a new entry decision; storage refresh failures fail closed. The device lease is still not an atomic lock, so concurrent races still require demo acceptance.
 - BE/trailing never loosens current protective SL.
 - Target guide reached with strong/weak momentum; no broker TP is accidentally attached.

@@ -261,10 +261,9 @@ namespace cAlgo.Robots
 
             if (result.Position != null)
             {
-                AlignFilledPositionStopToStructure(result.Position, plannedStop);
-                if (!IsPositionStillOpen(result.Position.Id) || _pendingEmergencyCloseIds.Contains(result.Position.Id))
-                    return;
-
+                // Save the approved budget before attempting absolute structural alignment. If the
+                // planned level was crossed in the meantime, the emergency-close lock must survive
+                // this instance's restart and be visible to a second instance.
                 bool hasValidActualStop = HasUsableStopLoss(result.Position);
                 double actualRiskDistance = hasValidActualStop
                     ? Math.Abs(result.Position.EntryPrice - result.Position.StopLoss.Value)
@@ -280,10 +279,22 @@ namespace cAlgo.Robots
                     LastTpDrawBarIndex = -1
                 };
                 _states[result.Position.Id] = entryState;
-                // A post-fill stop can be farther from entry than the planned pre-trade stop.
-                // Keep that structural/broker-valid stop; never force it inside the structure just
-                // to make the displayed risk match. Unknown or >5%-over-budget exposure pauses
-                // subsequent entries and remains flagged until the estimate becomes safe.
+                RefreshPostFillRiskReview(result.Position, entryState, false);
+                SaveState(result.Position, entryState);
+
+                AlignFilledPositionStopToStructure(result.Position, plannedStop);
+                if (!IsPositionStillOpen(result.Position.Id) || _pendingEmergencyCloseIds.Contains(result.Position.Id))
+                    return;
+
+                hasValidActualStop = HasUsableStopLoss(result.Position);
+                actualRiskDistance = hasValidActualStop
+                    ? Math.Abs(result.Position.EntryPrice - result.Position.StopLoss.Value)
+                    : stopDistance;
+                entryState.InitialRiskDistance = actualRiskDistance;
+                entryState.RiskDistanceEstimated = !hasValidActualStop;
+
+                // Re-assess after the structural SL is confirmed. The broker-valid structural
+                // stop is never pulled inside the wick merely to satisfy the risk budget.
                 RefreshPostFillRiskReview(result.Position, entryState, false);
                 SaveState(result.Position, entryState);
             }
