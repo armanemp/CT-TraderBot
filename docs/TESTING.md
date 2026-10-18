@@ -4,7 +4,7 @@
 
 The strategy has no account-environment branch that disables features on demo or changes strategy logic on live. It uses the same code path and current parameter values in both environments. The broker/account still supplies different commission schedules, conversion rates, symbol constraints, spread, margin/leverage, fills and slippage; these are inputs to the same logic, not an environment toggle.
 
-Pre-trade commission calculations are estimates derived from the symbol's commission type and minimum fee, converted to the account asset when possible. They must be compared with actual charged commission on demo for each target broker/account. Unknown conversions fail closed for a new order rather than pretending costs are zero. Post-fill risk remains an estimate; it is not a guarantee of maximum realized loss.
+Pre-trade commission calculations use the symbol's commission type and minimum fee, converted to the account asset when possible. They must be compared with actual charged commission on demo for each target broker/account. For the XAU/GOLD-only strategy profile, an unknown commission/conversion uses a conservative 10-pip-equivalent round-turn cash reserve, or twice the current spread if larger, so a small metadata/conversion issue alone does not veto an otherwise valid setup. Non-gold symbols still fail closed if cost conversion is unavailable. This reserve sizes the position; it does not widen the structural stop. In manual mode, a risk overrun of up to 5% is corrected by reducing volume to a broker-valid step within budget; larger overruns are still rejected. Post-fill risk remains an estimate, not a guarantee of maximum realized loss.
 
 ## Test layers
 
@@ -24,7 +24,7 @@ The platform-independent tests cover:
 - Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
 - Post-fill risk assessment returns WithinBudget, OverBudget, or Unknown; invalid/missing estimates never count as safe.
 - Round-turn commission arithmetic applies the broker's one-way minimum commission, adds both sides of commission to stop-plus-slippage loss, and rejects negative/non-finite costs; invalid estimates never become zero-cost trades.
-- Before entry sizing, the adapter estimates symbol commission using the configured commission type, minimum commission, quote/USD/account-asset conversion and candidate volume. Auto sizing solves for the largest volume that satisfies both free-margin and total estimated-loss budgets; manual sizing rejects a selected volume above the budget.
+- Before entry sizing, the adapter estimates symbol commission using the configured commission type, minimum commission, quote/USD/account-asset conversion and candidate volume. Auto sizing solves for the largest volume that satisfies both free-margin and total estimated-loss budgets. For XAU/GOLD only, unknown commission conversion uses a conservative pip-equivalent cash reserve and a visible warning; manual sizing can trim a small (up to 5%) risk overrun to the next safe broker volume step.
 - The cBot persists each new entry's approved loss budget in versioned v5 position state while still reading v2/v3/v4 and legacy 4-/5-field formats; missing, malformed or unreadable state remains locked for a managed position. Versioned state decoding/identity checks and sticky-flag round trips are unit-tested by the platform-independent codec.
 - If a structural stop is crossed while automatic emergency close is disabled, a sticky manual-review lock survives restart; the bot does not recalculate/widen the initial stop or start new entries until that position is closed.
 - When the configured emergency-close path is triggered by a crossed intended stop, its sticky request is saved and retried after restart until closure is confirmed.
@@ -41,7 +41,7 @@ The build script runs the test suite after compiling the solution and checks the
 - Long/short orders, including a price crossing planned SL between signal and fill.
 - ATR/history unavailable, zero/NaN values and insufficient bars.
 - Minimum/maximum volume, invalid steps, insufficient free margin and free-margin changes during execution.
-- Zero/percentage/per-lot/USD-notional commission schedules, minimum commission floors and account-currency conversion; if a reliable estimate cannot be computed, no order is sent.
+- Zero/percentage/per-lot/USD-notional commission schedules, minimum commission floors and account-currency conversion; if conversion is unavailable, verify the XAU/GOLD fallback reserve is visibly reported and sufficiently conservative against actual LiteFinance fees. Unknown costs for non-gold symbols must still fail closed.
 - Strict M5 alignment on/off and opposing strong/weak M5 context.
 - Fresh intrabar crossing, price already beyond an old level on startup, spread spikes and duplicate callbacks.
 - Broker rejects SL; retry remains bounded and warning remains visible; no fresh entries occur while protection remains unconfirmed.
