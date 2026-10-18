@@ -142,31 +142,58 @@ namespace cAlgo.Robots
             Positions.Opened -= OnPositionOpened;
             Positions.Closed -= OnPositionClosed;
 
-            // Refresh device-scoped storage before lease release so a stale cache cannot erase another owner's lease.
+            // Never release leases from a stale cache. If reload fails, leave keys untouched
+            // and let the expiry/recovery path handle them.
+            bool refreshed = false;
             try
             {
                 LocalStorage.Reload(SharedScope);
+                _sharedStorageHealthy = true;
+                refreshed = true;
             }
             catch (Exception ex)
             {
-                Diag("Warning: could not refresh shared storage during shutdown: {0}", ex.Message);
+                _sharedStorageHealthy = false;
+                Diag("Warning: could not refresh shared storage during shutdown; leases will expire naturally: {0}", ex.Message);
             }
 
-            // Release only leases still owned by this instance; leave initial-risk state intact.
             bool changed = false;
-            foreach (var positionId in _ownedPositionIds)
+            if (refreshed)
             {
-                string key = GetOwnerKey(positionId);
-                OwnershipLease lease;
-                if (TryReadLease(key, out lease) && lease.Owner == InstanceId)
+                foreach (var positionId in _ownedPositionIds)
                 {
-                    LocalStorage.Remove(key, SharedScope);
-                    changed = true;
+                    string key = GetOwnerKey(positionId);
+                    OwnershipLease lease;
+                    if (TryReadLease(key, out lease) && lease.Owner == InstanceId)
+                    {
+                        try
+                        {
+                            LocalStorage.Remove(key, SharedScope);
+                            changed = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            _sharedStorageHealthy = false;
+                            Diag("Warning: could not release lease for position {0}: {1}", positionId, ex.Message);
+                        }
+                    }
+
+                    if (!_sharedStorageHealthy)
+                        break;
                 }
             }
 
-            if (changed)
-                LocalStorage.Flush(SharedScope);
+            if (changed && _sharedStorageHealthy)
+            {
+                try
+                {
+                    LocalStorage.Flush(SharedScope);
+                }
+                catch (Exception ex)
+                {
+                    Diag("Warning: could not flush released leases during shutdown: {0}", ex.Message);
+                }
+            }
 
             foreach (var positionId in new List<long>(_tpGuidePositionIds))
                 RemoveSuggestedTpGuide(positionId);
@@ -253,9 +280,17 @@ namespace cAlgo.Robots
             _lastEmergencyCloseAttemptTime.Remove(position.Id);
             RemoveSuggestedTpGuide(position.Id);
 
-            LocalStorage.Remove(GetStateKey(position.Id), SharedScope);
-            LocalStorage.Remove(GetOwnerKey(position.Id), SharedScope);
-            LocalStorage.Flush(SharedScope);
+            try
+            {
+                LocalStorage.Remove(GetStateKey(position.Id), SharedScope);
+                LocalStorage.Remove(GetOwnerKey(position.Id), SharedScope);
+                LocalStorage.Flush(SharedScope);
+            }
+            catch (Exception ex)
+            {
+                Diag("Warning: position closed, but saved state/lease cleanup failed for position {0}: {1}", position.Id, ex.Message);
+                SetVolumeNotice("Position closed, but saved state cleanup failed. A stale lease will expire; review diagnostics.", true);
+            }
         }
     }
 }

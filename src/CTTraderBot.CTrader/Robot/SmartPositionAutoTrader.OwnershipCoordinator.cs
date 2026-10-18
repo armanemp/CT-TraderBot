@@ -8,39 +8,54 @@ namespace cAlgo.Robots
 {
     public partial class SmartPositionAutoTraderM5MicroSwingPrecisionHedgedVolume
     {
-        private void ReloadSharedStorageIfNeeded(Position position)
+        private bool ReloadSharedStorageIfNeeded(Position position)
         {
             var now = DateTime.UtcNow;
             if ((now - _lastSharedStorageReloadUtc).TotalMilliseconds < 500)
-                return;
+                return _sharedStorageHealthy;
 
-            // cTrader documents Reload as the way to observe values written by other instances.
-            // All writes in this cBot are flushed immediately before relying on them.
+            // Never make an ownership decision from stale cache after a failed refresh.
             _lastSharedStorageReloadUtc = now;
             try
             {
                 LocalStorage.Reload(SharedScope);
+                _sharedStorageHealthy = true;
+                return true;
             }
             catch (Exception ex)
             {
-                WarnThrottled(position, "Could not refresh shared manager lease from local storage: " + ex.Message);
+                _sharedStorageHealthy = false;
+                WarnThrottled(position, "Could not refresh shared manager lease; this instance will not manage the position until storage is readable: " + ex.Message);
+                SetVolumeNotice("Shared manager storage is unavailable. Position management is paused to avoid competing managers.", true);
+                return false;
             }
         }
 
         private bool TryAcquireManagementLease(Position position)
         {
-            ReloadSharedStorageIfNeeded(position);
+            if (!ReloadSharedStorageIfNeeded(position))
+                return false;
+
             string key = GetOwnerKey(position.Id);
             OwnershipLease lease;
             long nowTicks = Server.Time.Ticks;
 
-            if (TryReadLease(key, out lease))
+            bool leaseExists = TryReadLease(key, out lease);
+            if (!_sharedStorageHealthy)
+                return false;
+
+            if (leaseExists)
             {
                 if (lease.Owner == InstanceId)
                 {
+                    if (lease.ExpiryTicks - nowTicks <= TimeSpan.FromSeconds(OwnershipLeaseSeconds * 0.55).Ticks &&
+                        !WriteLease(key))
+                    {
+                        _ownedPositionIds.Remove(position.Id);
+                        return false;
+                    }
+
                     _ownedPositionIds.Add(position.Id);
-                    if (lease.ExpiryTicks - nowTicks <= TimeSpan.FromSeconds(OwnershipLeaseSeconds * 0.55).Ticks)
-                        WriteLease(key);
                     return true;
                 }
 
@@ -51,24 +66,49 @@ namespace cAlgo.Robots
                 // Expired owner, or this instance has explicitly higher priority: take over.
             }
 
-            WriteLease(key);
+            if (!WriteLease(key))
+                return false;
+
             _ownedPositionIds.Add(position.Id);
             return true;
         }
 
-        private void WriteLease(string key)
+        private bool WriteLease(string key)
         {
             long expiryTicks = Server.Time.AddSeconds(OwnershipLeaseSeconds).Ticks;
             string value = string.Format(CultureInfo.InvariantCulture, "{0}|{1}|{2}",
                 InstanceId, ManagerPriority, expiryTicks);
-            LocalStorage.SetString(key, value, SharedScope);
-            LocalStorage.Flush(SharedScope);
+            try
+            {
+                LocalStorage.SetString(key, value, SharedScope);
+                LocalStorage.Flush(SharedScope);
+                _sharedStorageHealthy = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _sharedStorageHealthy = false;
+                Diag("Could not persist management lease; refusing ownership: {0}", ex.Message);
+                SetVolumeNotice("Could not persist the shared management lease. This instance will not modify positions.", true);
+                return false;
+            }
         }
 
         private bool TryReadLease(string key, out OwnershipLease lease)
         {
             lease = null;
-            string raw = LocalStorage.GetString(key, SharedScope);
+            string raw;
+            try
+            {
+                raw = LocalStorage.GetString(key, SharedScope);
+            }
+            catch (Exception ex)
+            {
+                _sharedStorageHealthy = false;
+                Diag("Could not read shared management lease: {0}", ex.Message);
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(raw))
                 return false;
 

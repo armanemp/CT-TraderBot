@@ -14,14 +14,26 @@ namespace cAlgo.Robots
             if (_states.TryGetValue(position.Id, out state))
                 return state;
 
-            string saved = LocalStorage.GetString(GetStateKey(position.Id), SharedScope);
+            string saved = null;
+            try
+            {
+                saved = LocalStorage.GetString(GetStateKey(position.Id), SharedScope);
+            }
+            catch (Exception ex)
+            {
+                WarnThrottled(position, "Could not restore saved position state; falling back to estimated R: " + ex.Message);
+                SetVolumeNotice("Position state could not be read. Any recovered R/TP guide will be marked estimated.", true);
+            }
+
             if (!string.IsNullOrWhiteSpace(saved))
             {
                 var parts = saved.Split('|');
                 double storedEntry;
                 double storedRisk;
                 long storedEntryTimeTicks;
-                bool storedEstimated = false;
+                // Four-field state predates the estimate flag; classify it as estimated rather
+                // than falsely claiming the original stop risk was confirmed.
+                bool storedEstimated = true;
                 bool estimateFieldValid = parts.Length == 4 ||
                     (parts.Length == 5 && bool.TryParse(parts[4], out storedEstimated));
                 if ((parts.Length == 4 || parts.Length == 5) && estimateFieldValid &&
@@ -31,7 +43,8 @@ namespace cAlgo.Robots
                     long.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedEntryTimeTicks) &&
                     Math.Abs(storedEntry - position.EntryPrice) <= Symbol.TickSize * 0.5 &&
                     storedEntryTimeTicks == position.EntryTime.Ticks &&
-                    IsFinitePositive(storedRisk))
+                    IsFinitePositive(storedRisk) &&
+                    storedRisk >= Symbol.TickSize * 0.5)
                 {
                     state = new PositionState
                     {
@@ -39,6 +52,8 @@ namespace cAlgo.Robots
                         RiskDistanceEstimated = storedEstimated
                     };
                     _states[position.Id] = state;
+                    if (parts.Length == 4)
+                        SaveState(position, state); // Upgrade legacy state with the explicit estimate flag.
                     return state;
                 }
             }
@@ -82,8 +97,16 @@ namespace cAlgo.Robots
             string value = string.Format(CultureInfo.InvariantCulture, "{0:R}|{1:R}|{2}|{3}|{4}",
                 position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
                 state.RiskDistanceEstimated);
-            LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);
-            LocalStorage.Flush(SharedScope);
+            try
+            {
+                LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);
+                LocalStorage.Flush(SharedScope);
+            }
+            catch (Exception ex)
+            {
+                WarnThrottled(position, "Position state could not be persisted; current-session management continues, but restart recovery may be estimated: " + ex.Message);
+                SetVolumeNotice("Position state could not be saved. Restart recovery may use an estimated initial risk.", true);
+            }
         }
 
         private string GetStateKey(long positionId)

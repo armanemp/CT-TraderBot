@@ -250,6 +250,7 @@ namespace cAlgo.Robots
         private readonly Dictionary<long, DateTime> _lastEmergencyCloseAttemptTime = new Dictionary<long, DateTime>();
         private readonly HashSet<long> _tpGuidePositionIds = new HashSet<long>();
         private DateTime _lastSharedStorageReloadUtc = DateTime.MinValue;
+        private bool _sharedStorageHealthy = true;
 
         // Runtime volume settings can be switched from the on-chart panel without restarting the cBot.
         private MicroSwingPrecisionVolumeMode _runtimeVolumeMode;
