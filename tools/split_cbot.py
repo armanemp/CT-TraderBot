@@ -181,13 +181,17 @@ def split_source(source: str, class_name: str) -> tuple[str, dict[str, str], dic
     if not methods:
         raise ValueError("No methods found; source differs from the reviewed baseline")
     names = Counter(str(method["name"]) for method in methods)
-    unknown = sorted(set(names) - set(GROUPS))
-    missing = sorted(set(GROUPS) - set(names))
-    if unknown or missing:
-        details = []
-        if unknown: details.append("unmapped methods: " + ", ".join(unknown))
-        if missing: details.append("expected methods not found: " + ", ".join(missing))
-        raise ValueError("Source inventory mismatch; " + "; ".join(details))
+    expected_counts = Counter(GROUPS)
+    # This method is intentionally overloaded: both signatures must be retained.
+    expected_counts["GetNearestStructuralBarrier"] = 2
+    all_names = sorted(set(names) | set(expected_counts))
+    mismatched = [
+        f"{name} (expected {expected_counts.get(name, 0)}, found {names.get(name, 0)})"
+        for name in all_names
+        if names.get(name, 0) != expected_counts.get(name, 0)
+    ]
+    if mismatched:
+        raise ValueError("Source inventory mismatch; " + "; ".join(mismatched))
 
     groups: dict[str, list[dict[str, object]]] = defaultdict(list)
     for method in methods:
