@@ -17,6 +17,8 @@ The platform-independent tests cover:
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 - Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
 - Post-fill risk assessment returns WithinBudget, OverBudget, or Unknown; invalid/missing estimates never count as safe.
+- Round-turn commission arithmetic applies the broker's one-way minimum commission, adds both sides of commission to stop-plus-slippage loss, and rejects negative/non-finite costs; invalid estimates never become zero-cost trades.
+- Before entry sizing, the adapter estimates symbol commission using the configured commission type, minimum commission, quote/USD/account-asset conversion and candidate volume. Auto sizing solves for the largest volume that satisfies both free-margin and total estimated-loss budgets; manual sizing rejects a selected volume above the budget.
 - The cBot persists each new entry's approved loss budget in versioned v5 position state while still reading v2/v3/v4 and legacy 4-/5-field formats; missing, malformed or unreadable state remains locked for a managed position. Versioned state decoding/identity checks and sticky-flag round trips are unit-tested by the platform-independent codec.
 - If a structural stop is crossed while automatic emergency close is disabled, a sticky manual-review lock survives restart; the bot does not recalculate/widen the initial stop or start new entries until that position is closed.
 - When the configured emergency-close path is triggered by a crossed intended stop, its sticky request is saved and retried after restart until closure is confirmed.
@@ -33,6 +35,7 @@ The build script runs the test suite after compiling the solution and checks the
 - Long/short orders, including a price crossing planned SL between signal and fill.
 - ATR/history unavailable, zero/NaN values and insufficient bars.
 - Minimum/maximum volume, invalid steps, insufficient free margin and free-margin changes during execution.
+- Zero/percentage/per-lot/USD-notional commission schedules, minimum commission floors and account-currency conversion; if a reliable estimate cannot be computed, no order is sent.
 - Strict M5 alignment on/off and opposing strong/weak M5 context.
 - Fresh intrabar crossing, price already beyond an old level on startup, spread spikes and duplicate callbacks.
 - Broker rejects SL; retry remains bounded and warning remains visible; no fresh entries occur while protection remains unconfirmed.
