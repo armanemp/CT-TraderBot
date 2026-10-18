@@ -66,8 +66,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             git commit -m "refactor: split cBot baseline into responsibility-based files"
             if ($LASTEXITCODE -ne 0) { throw "Commit of generated files failed." }
+            git fetch origin main
+            if ($LASTEXITCODE -ne 0) { throw "Fetch of latest main failed." }
+            git rebase origin/main
+            if ($LASTEXITCODE -ne 0) { throw "Could not rebase generated source on the latest main; resolve manually rather than force-pushing." }
             git push origin HEAD:main
-            if ($LASTEXITCODE -ne 0) { throw "Push of generated files failed." }
+            if ($LASTEXITCODE -ne 0) { throw "Push of generated files failed; no force-push will be attempted." }
           } else {
             Write-Host "Generated source already matches the repository; no commit required."
           }
