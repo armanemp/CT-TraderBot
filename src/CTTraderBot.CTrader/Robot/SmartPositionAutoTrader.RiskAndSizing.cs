@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using CTTraderBot.Core.Policies;
 using cAlgo.API;
 using cAlgo.API.Indicators;
 
@@ -70,28 +71,12 @@ namespace cAlgo.Robots
 
         private double GetAdaptiveAllowedRiskPercent(double qualityScore)
         {
-            double minimum = Math.Max(0.0, MinimumOpportunityRiskPercent);
-            double maximum = Math.Max(minimum, MaximumOpportunityRiskPercent);
-            double allowed;
-
-            if (EnableAdaptiveRiskBudget)
-            {
-                // Convex sizing keeps middling setups closer to the minimum budget; only strong
-                // composite scores approach the maximum. This score is a rule-based quality index,
-                // not a statistically calibrated win probability.
-                double quality = Clamp01(qualityScore);
-                double riskCurve = Math.Pow(quality, 2.0);
-                allowed = minimum + riskCurve * (maximum - minimum);
-            }
-            else
-                allowed = maximum;
-
-            // This is a disaster-control ceiling, not the normal sizing rule. The active budget
-            // remains opportunity-dependent below the ceiling.
-            if (AbsoluteRiskCeilingPercent > 0)
-                allowed = Math.Min(allowed, AbsoluteRiskCeilingPercent);
-
-            return Math.Max(0.0, allowed);
+            return AdaptiveRiskBudgetPolicy.Calculate(
+                qualityScore,
+                EnableAdaptiveRiskBudget,
+                MinimumOpportunityRiskPercent,
+                MaximumOpportunityRiskPercent,
+                AbsoluteRiskCeilingPercent);
         }
 
         private double EstimateRoundTurnCommissionPips(Position position)
