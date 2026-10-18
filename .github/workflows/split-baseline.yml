@@ -6,6 +6,7 @@ on:
     paths:
       - "legacy/reference/**"
       - "tools/split_cbot.py"
+      - "src/CTTraderBot.CTrader/CTTraderBot.CTrader.csproj"
       - ".github/workflows/split-baseline.yml"
 
 permissions:
