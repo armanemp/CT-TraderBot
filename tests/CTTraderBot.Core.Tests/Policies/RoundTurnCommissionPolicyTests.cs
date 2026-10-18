@@ -7,6 +7,49 @@ namespace CTTraderBot.Core.Tests.Policies
     [TestFixture]
     public sealed class RoundTurnCommissionPolicyTests
     {
+        [TestCase(30.0, 0.10, 100000.0, 100000.0, BrokerCommissionBasis.UsdPerMillionUsdVolume, 3.0)]
+        [TestCase(3.5, 0.20, 0.0, 0.0, BrokerCommissionBasis.UsdPerOneLot, 0.70)]
+        [TestCase(0.01, 0.0 + 1.0, 0.0, 150000.0, BrokerCommissionBasis.PercentageOfTradingVolume, 15.0)]
+        [TestCase(2.2, 0.50, 0.0, 0.0, BrokerCommissionBasis.QuoteCurrencyPerOneLot, 1.10)]
+        public void EstimatesOneWayCommissionForEachBrokerBasis(
+            double rate,
+            double lots,
+            double notionalUsd,
+            double notionalQuote,
+            BrokerCommissionBasis basis,
+            double expected)
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.EstimateOneWayCommission(rate, lots, notionalUsd, notionalQuote, basis),
+                Is.EqualTo(expected).Within(1e-10));
+        }
+
+        [Test]
+        public void ZeroRateDoesNotRequireNotionalConversion()
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.EstimateOneWayCommission(
+                    0.0, 0.10, double.NaN, double.NaN, BrokerCommissionBasis.UsdPerMillionUsdVolume),
+                Is.Zero);
+        }
+
+        [Test]
+        public void InvalidCommissionBasisInputsAreUnknown()
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.EstimateOneWayCommission(
+                    30.0, 0.0, 100000.0, 100000.0, BrokerCommissionBasis.UsdPerMillionUsdVolume),
+                Is.NaN);
+            Assert.That(
+                RoundTurnCommissionPolicy.EstimateOneWayCommission(
+                    0.01, 1.0, 0.0, double.NaN, BrokerCommissionBasis.PercentageOfTradingVolume),
+                Is.NaN);
+            Assert.That(
+                RoundTurnCommissionPolicy.EstimateOneWayCommission(
+                    double.PositiveInfinity, 1.0, 100000.0, 100000.0, BrokerCommissionBasis.UsdPerMillionUsdVolume),
+                Is.NaN);
+        }
+
         [Test]
         public void AddsBothSidesOfCommissionToStopAndSlippageRisk()
         {
