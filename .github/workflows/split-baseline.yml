@@ -1,0 +1,72 @@
+name: Migrate baseline into partial-class files
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "legacy/reference/**"
+      - "tools/split_cbot.py"
+      - ".github/workflows/split-baseline.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cbot-baseline-split-main
+  cancel-in-progress: false
+
+jobs:
+  split-and-verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source baseline
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Split source without rewriting method bodies
+        shell: pwsh
+        run: |
+          python tools/split_cbot.py legacy/reference/SmartPositionAutoTrader_M5_MicroSwingPrecision_HedgedVolume.cs --output-dir src/CTTraderBot.CTrader/Robot --force
+          if ($LASTEXITCODE -ne 0) { throw "Source decomposition failed; no generated code will be committed." }
+
+      - name: Restore
+        run: dotnet restore .\CT-TraderBot.sln
+
+      - name: Compile decomposed cBot
+        run: dotnet build .\CT-TraderBot.sln --configuration Release --no-restore
+
+      - name: Verify compiled cBot artifact
+        shell: pwsh
+        run: |
+          $artifact = Join-Path $env:USERPROFILE "Documents\cAlgo\Sources\Robots\CTTraderBot.algo"
+          if (-not (Test-Path $artifact)) {
+            throw "Build succeeded but no .algo artifact was published to $artifact"
+          }
+          Write-Host "Verified artifact: $artifact"
+
+      - name: Commit generated source files
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "src/CTTraderBot.CTrader/Robot/*.cs"
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "refactor: split cBot baseline into responsibility-based files"
+            if ($LASTEXITCODE -ne 0) { throw "Commit of generated files failed." }
+            git push origin HEAD:main
+            if ($LASTEXITCODE -ne 0) { throw "Push of generated files failed." }
+          } else {
+            Write-Host "Generated source already matches the repository; no commit required."
+          }
