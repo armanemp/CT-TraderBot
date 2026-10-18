@@ -292,11 +292,12 @@ namespace cAlgo.Robots
             double priorFast = _entryFastEma.Result.Last(2);
             double close = Bars.Last(1).Close;
 
-            bool bullish = fast > slow && close >= slow && fast >= priorFast;
-            bool bearish = fast < slow && close <= slow && fast <= priorFast;
-            if (bullish == bearish)
-                return null;
-            return bullish ? TradeType.Buy : TradeType.Sell;
+            TrendBias bias = M5TrendBiasPolicy.Calculate(fast, slow, priorFast, close);
+            if (bias == TrendBias.Bullish)
+                return TradeType.Buy;
+            if (bias == TrendBias.Bearish)
+                return TradeType.Sell;
+            return null;
         }
 
         private TradeType? GetLowerTimeframeSignal()

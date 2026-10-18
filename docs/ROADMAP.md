@@ -33,18 +33,19 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate passed for mechanical split.** This does not mean business logic has been extracted into standalone services or validated in a running cTrader instance; those remain future phases.
 
 ## Phase 2.1 — First pure policy extraction and regression harness
-**Status: In progress — CI validation pending**
+**Status: Verified**
 - [x] Extract the existing adaptive risk-budget formula into `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`.
 - [x] Keep the cBot as an adapter: pass existing parameter values to the policy and use its result; do not change the calculation formula.
 - [x] Add a .NET 6 NUnit test project and boundary tests for score clamping, squared quality curve, adaptive-disabled behavior, maximum/minimum boundaries and hard ceiling.
 - [x] Add the test project to the solution and make both the Windows build workflow and `scripts/build-cbot.ps1` run the tests.
-- [x] Local validation recorded 2026-10-18: `scripts/build-cbot.ps1` completed with 0 warnings/errors, `CTTraderBot.algo` was published to `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo`, and NUnit passed 14/14 tests at commit `8962d87`.
-- [ ] Confirm the same combined state in a successful latest CI run.
-- **Scope:** only the scalar risk-budget policy is covered. This is not yet a complete risk/sizing test suite.
+- [x] Local validation recorded 2026-10-18 at commit `25bb3e1`: `scripts/build-cbot.ps1` completed with 0 warnings/errors, `CTTraderBot.algo` was published to `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo`, and NUnit passed 24/24 tests.
+- [x] Combined Windows CI build and test run passed at commit `25bb3e1`: [GitHub Actions](https://github.com/armanemp/CT-TraderBot/actions/runs/39084454286).
+- **Scope:** only the scalar risk-budget and fresh-crossing rules are covered. This is not yet a complete risk/sizing or entry-policy test suite.
 
 ## Phase 3 — Entry policy isolation
 - [x] Extract the fresh above/below quote-cross predicate into `FreshPriceCrossPolicy` without changing entry criteria; cover equality edges, stale crossings and missing previous quotes with deterministic tests.
-- [ ] Separate M5 trend context, closed-bar setup and intrabar crossing policies.
+- [ ] Extract the M5 EMA/closed-price direction predicate into `M5TrendBiasPolicy`; implementation and deterministic boundary tests are committed, with CI/local validation pending.
+- [ ] Separate the remaining M5 trend-strength context, closed-bar setup and intrabar crossing policies.
 - [ ] Make strict M5 alignment a true hard filter when enabled; retain soft-filter behavior only when explicitly selected.
 - [ ] Evaluate the actual live breakout event, not only the previous closed candle.
 - [ ] Test lower-timeframe swing lookback and cooldown boundaries.
