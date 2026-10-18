@@ -4,7 +4,7 @@ A maintainable cTrader Automate cBot project for the SmartPosition M5 Micro-Swin
 
 ## Project status
 
-**Architecture foundation — migration in progress.** The original single-file cBot is the behavioral baseline. It must be decomposed incrementally while preserving the existing entry, risk, protection, suggested-target, state-recovery, chart UI, and ownership behavior. Do not claim parity or production readiness until the extracted implementation compiles against the installed cTrader API and passes the acceptance suite.
+**Migration status:** the original single-file source is captured under `legacy/reference/`; the first behavior-preserving pass split its 74 methods into 11 C# files and compiled successfully on Windows CI. Standalone service extraction, a formal unit-test suite, local cTrader validation and demo acceptance remain in progress. The original source is the behavioral baseline.
 
 ## Goals
 
@@ -22,7 +22,7 @@ src/
   CTTraderBot.Core/          Platform-independent policies and domain models
   CTTraderBot.CTrader/       cTrader Robot entry point and platform adapters
 tests/
-  CTTraderBot.Core.Tests/    Fast deterministic unit tests
+  README.md                  Test strategy and acceptance scenarios
 docs/
   ARCHITECTURE.md
   ROADMAP.md
@@ -51,13 +51,7 @@ git pull --ff-only origin main
 
 The build script restores and builds `CT-TraderBot.sln`, then verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
 
-To compile only the current project scaffold before the Robot source is integrated, run:
-
-```powershell
-.\scripts\build-cbot.ps1 -AllowScaffoldBuild
-```
-
-That command explicitly reports a scaffold-only compile and does **not** produce a tradable bot. The unit-test project will be added with the first tested pure policy extraction; until then there is no meaningful `dotnet test` target.
+There is not yet a standalone unit-test project. It will be added alongside the first extracted pure policy and its real tests; an empty test project will not be used as a placeholder.
 
 ## Safety
 
