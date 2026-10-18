@@ -11,7 +11,7 @@ This is a source-level review of the current repository: all 11 split cBot sourc
 - CTTraderBot.algo was published to the cTrader Robots directory.
 - Windows CI passed for that same baseline: https://github.com/armanemp/CT-TraderBot/actions/runs/39084630747.
 
-The code-audit commit 0f4b29a passed Windows CI with a successful Release build, zero warnings/errors, and 55/55 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. Follow-on code commit 5004b86 also passed the complete Windows CI workflow (build and tests): https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. That patch rejects malformed ownership-lease records, displays throttled stop/post-fill-risk warnings on the panel, and rejects non-finite margin usage. A local build of this latest code and runtime/demo acceptance remain pending. A successful build or unit test is not evidence of profitability.
+The code-audit commit 0f4b29a passed Windows CI with a successful Release build, zero warnings/errors, and 55/55 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The entry-diagnostics and module-split code at commit 226d7bb passed Windows CI with a successful Release build, zero warnings/errors, and 69/69 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. A local build of this latest code and runtime/demo acceptance remain pending. A successful build or unit test is not evidence of profitability.
 
 ## What the cBot does
 
@@ -110,3 +110,8 @@ Do not use a live account based only on a successful build or unit tests. Requir
 ## Audit addendum — entry veto visibility
 
 Code commit `8aecbef` adds a separate, rate-limited entry-status line for common entry filters, preserving the existing panel notice used for protection warnings. It also gates new entries when known position-state or ownership storage failures occur. This is a visibility and fail-closed change rather than a strategy threshold change. CI/local validation is pending; no profitability claim is implied.
+
+
+## Current source layout validation
+
+The entry and protection responsibilities are now split across named partial-class modules (execution, signal, structure, quality, entry diagnostics, initial protection, BE/trailing, and stop-price rules). CI at commit `226d7bb` passed with 69/69 tests and no warnings/errors. This is not proof of trading performance; local build, demo execution and out-of-sample evidence remain required.

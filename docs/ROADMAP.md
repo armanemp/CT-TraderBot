@@ -48,7 +48,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Fix the strict M5 alignment contract: when enabled, neutral or conflicting M5 bias must reject the signal; a lower-timeframe structure break may only override the soft-context path.
 - [x] Add deterministic policy tests for strict matching, opposite direction, neutral bias, and soft mode.
 - [x] Separate entry reward/risk screening from the adaptive chart-only TP guide; screening now uses the configured base R and caps it at a confirmed forward structural barrier rather than borrowing an aspirational guide extension.
-- [ ] Verify the screening-policy extraction with latest CI and local tests.
+- [x] Verify entry-screening policy in Windows CI: 69/69 tests passed at commit `226d7bb`; a local build of that newer ref is still pending.
 - [x] Windows CI at code commit 0f4b29a passed the complete 55-test suite with 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020.
 - [x] Follow-on code commit 5004b86 also passed all Windows CI steps, including build and unit tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978.
 - [ ] User to run the current repository revision locally; broker storage, restart and position-management acceptance still require cTrader demo tests.
@@ -68,9 +68,9 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Phase 5 — Initial protection
 - [ ] Isolate stop-anchor calculation from broker submission.
-- [x] Use the configured fixed-pip fallback when both lower-TF and M5 ATR are unavailable; apply `M5FallbackAtrMultiplier` in ATR recovery. This commit awaits CI/local validation.
+- [x] Use the configured fixed-pip fallback when both lower-TF and M5 ATR are unavailable; apply `M5FallbackAtrMultiplier` in ATR recovery. Windows CI passed at `226d7bb`; current local validation pending.
 - [ ] Validate broker distance, tick size, side, and quote side consistently.
-- [x] Make SL rejection/unprotected status visible on the volume panel, throttled to avoid repeated warning floods; preserve bounded retry behavior. Newer code commit awaits CI/local validation.
+- [x] Make SL rejection/unprotected status visible on the volume panel, throttled to avoid repeated warning floods; preserve bounded retry behavior. Verified by Windows CI at `8d519b2` and revalidated at `226d7bb`.
 - **Exit gate:** long/short geometry tests pass and SL rejection is demonstrated on demo.
 
 ## Phase 6 — Break-even and trailing
@@ -100,7 +100,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate:** valid/invalid input, toggles and shutdown cleanup are checked in cTrader.
 
 ## Phase 10 — Performance and acceptance
-- [x] Filter position management and entry-capacity counts by exact cBot label and symbol, avoiding repeated account-wide scans per tick; use a filtered ID lookup because the pinned API's FindById expects int while persisted position IDs are long. This commit awaits CI/local validation.
+- [x] Filter position management and entry-capacity counts by exact cBot label and symbol, avoiding repeated account-wide scans per tick; use a filtered ID lookup because the pinned API's FindById expects int while persisted position IDs are long. Verified by Windows CI at `226d7bb`.
 - [ ] Measure CPU/latency with realistic tick and position counts.
 - [ ] Run tests, compile, static review, backtest and demo acceptance scenarios.
 - [ ] Record known limitations and release checklist.
@@ -113,3 +113,9 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 ## Audit addendum — entry veto visibility
 - [x] Add a separate rate-limited entry-status line so users can distinguish common veto reasons without overwriting protection warnings. Code committed in `8aecbef`; CI and local build validation pending.
 - [x] Pause new entries while position-state or ownership storage is known unhealthy; runtime recovery/storage scenarios remain required.
+
+
+## Audit addendum — module boundaries
+- [x] Split entry execution, signal, structure and scoring methods into separate partial-class modules without changing method bodies. Windows CI passed at `226d7bb` with 69/69 tests and 0 warnings/errors.
+- [x] Split initial protection, BE/trailing and stop-price geometry into separate partial-class modules; same CI result.
+- [ ] Run `scripts/build-cbot.ps1` locally on the current head and perform cTrader demo acceptance for broker/storage behavior.

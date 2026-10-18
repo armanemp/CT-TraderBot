@@ -38,6 +38,19 @@ Domain/policy code must not call `Robot`, `Symbol`, `Account`, `Positions`, `Cha
 - **UI:** parse and validate user input at the boundary; business logic must not depend on controls.
 - **Robot entry point:** wire events, sequence use-cases and translate API results. It must not contain the complete strategy.
 
+## Current implementation map
+
+The source split is kept at responsibility boundaries:
+
+- Entry orchestration: `SmartPositionAutoTrader.EntryExecution.cs`
+- Entry signal predicates: `SmartPositionAutoTrader.EntrySignals.cs`
+- Swing/ATR/forward-barrier calculations: `SmartPositionAutoTrader.EntryStructure.cs`
+- Setup scoring and entry reward/risk: `SmartPositionAutoTrader.EntryQuality.cs`
+- Entry veto telemetry: `SmartPositionAutoTrader.EntryDiagnostics.cs`
+- Initial SL submission, BE/trailing and price geometry: `SmartPositionAutoTrader.InitialProtection.cs`, `SmartPositionAutoTrader.BreakEvenTrailing.cs`, `SmartPositionAutoTrader.StopPriceRules.cs`
+
+These are partial-class adapter modules today, not all independent domain services yet. The last mechanical split moved existing methods and was compiled/tested in Windows CI at commit `226d7bb`; current local build and cTrader runtime acceptance remain separate release gates.
+
 ## Migration rules
 
 1. Capture the exact original source in `legacy/reference/` unchanged and record its checksum.

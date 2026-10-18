@@ -4,7 +4,7 @@ A maintainable cTrader Automate cBot project for the SmartPosition M5 Micro-Swin
 
 ## Project status
 
-**Migration status:** the original single-file source is captured under legacy/reference; the 74-method behavior-preserving split has been compiled in Windows CI and locally. Three pure policies now have an NUnit regression harness. The audit is still in progress: broker/runtime acceptance, full entry/protection policy extraction, and evidence-based strategy evaluation remain open. The legacy source remains the behavior baseline.
+**Migration status:** the original single-file source is captured under legacy/reference; the 74-method behavior-preserving split has been compiled in Windows CI and locally. Platform-independent policies now cover adaptive risk budgeting, fresh price crossings, M5 direction/alignment and entry reward/risk screening, with an NUnit regression harness. The audit is still in progress: broker/runtime acceptance, full entry/protection policy extraction, and evidence-based strategy evaluation remain open. The legacy source remains the behavior baseline.
 
 ## Goals
 
@@ -28,6 +28,22 @@ docs/
   ROADMAP.md
   TESTING.md
 ```
+
+
+## Current cBot module map
+
+- `SmartPositionAutoTrader.Robot.cs`: cBot identity, parameters and runtime state.
+- `SmartPositionAutoTrader.Lifecycle.cs`: startup validation, events, timer and shutdown.
+- `SmartPositionAutoTrader.EntryExecution.cs`: entry orchestration, sizing checks and order submission.
+- `SmartPositionAutoTrader.EntrySignals.cs`: closed-bar patterns, live breakout and M5 direction.
+- `SmartPositionAutoTrader.EntryStructure.cs`: swing anchors, lower-timeframe ATR and forward barriers.
+- `SmartPositionAutoTrader.EntryQuality.cs`: setup scoring, M5 directional strength and entry-screening R.
+- `SmartPositionAutoTrader.EntryDiagnostics.cs`: rate-limited explanation of entry vetoes, separate from protection warnings.
+- `SmartPositionAutoTrader.RiskAndSizing.cs`: margin estimation, volume constraints, risk budget and commission estimate.
+- `SmartPositionAutoTrader.InitialProtection.cs`, `SmartPositionAutoTrader.BreakEvenTrailing.cs`, `SmartPositionAutoTrader.StopPriceRules.cs`: initial SL, profit-lock/trailing and shared stop-price geometry.
+- `SmartPositionAutoTrader.PositionManagement.cs`, `SmartPositionAutoTrader.PositionStateStore.cs`, `SmartPositionAutoTrader.OwnershipCoordinator.cs`: exact-label management, persisted risk state and lease-based coordination.
+- `SmartPositionAutoTrader.SuggestedTargetGuide.cs`: chart-only target guide; it never submits a broker TP.
+- `SmartPositionAutoTrader.VolumeControlPanel.cs` and `SmartPositionAutoTrader.RuntimeHelpers.cs`: chart controls, status notices and small runtime helpers.
 
 ## Source and compiled cBot locations
 
