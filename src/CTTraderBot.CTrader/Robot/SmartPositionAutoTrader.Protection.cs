@@ -88,11 +88,23 @@ namespace cAlgo.Robots
 
             if (wrongSide && Bars != null && Bars.Count >= 2)
             {
-                // Conservative M5 fallback only if lower-TF structure isn't usable.
-                var candle = Bars.Last(1);
+                // Conservative M5 fallback: use the configured number of completed candles so a
+                // single anomalous candle does not define the recovery stop by itself.
+                int wickLookback = Math.Max(1, Math.Min(StructuralWickLookbackBars, Bars.Count - 1));
+                double m5Extreme = position.TradeType == TradeType.Buy ? double.MaxValue : double.MinValue;
+                for (int i = 1; i <= wickLookback; i++)
+                {
+                    if (position.TradeType == TradeType.Buy)
+                        m5Extreme = Math.Min(m5Extreme, Bars.Last(i).Low);
+                    else
+                        m5Extreme = Math.Max(m5Extreme, Bars.Last(i).High);
+                }
+
+                double m5Buffer = Math.Max(2 * Symbol.TickSize,
+                    Math.Max(spread * M5SpreadBufferMultiplier, m5Atr * M5AtrBufferFraction));
                 plannedStop = position.TradeType == TradeType.Buy
-                    ? candle.Low - Math.Max(2 * Symbol.TickSize, Math.Max(spread * M5SpreadBufferMultiplier, m5Atr * M5AtrBufferFraction))
-                    : candle.High + Math.Max(2 * Symbol.TickSize, Math.Max(spread * M5SpreadBufferMultiplier, m5Atr * M5AtrBufferFraction));
+                    ? m5Extreme - m5Buffer
+                    : m5Extreme + m5Buffer;
                 method = "M5 fallback wick";
                 usedFallback = true;
             }
@@ -103,12 +115,28 @@ namespace cAlgo.Robots
             if (wrongSide)
             {
                 double fallbackAtr = lowerAtr > 0 ? lowerAtr : m5Atr;
-                if (fallbackAtr <= 0)
-                    return RetryInitialStop(position, "No valid lower-TF or M5 ATR is available for a fallback stop.");
-                plannedStop = position.TradeType == TradeType.Buy
-                    ? position.EntryPrice - Math.Max(fallbackAtr * 1.0, spread * M5SpreadBufferMultiplier + 2 * Symbol.TickSize)
-                    : position.EntryPrice + Math.Max(fallbackAtr * 1.0, spread * M5SpreadBufferMultiplier + 2 * Symbol.TickSize);
-                method = "ATR emergency fallback";
+                if (fallbackAtr > 0)
+                {
+                    double atrFallbackDistance = Math.Max(
+                        fallbackAtr * M5FallbackAtrMultiplier,
+                        spread * M5SpreadBufferMultiplier + 2 * Symbol.TickSize);
+                    plannedStop = position.TradeType == TradeType.Buy
+                        ? position.EntryPrice - atrFallbackDistance
+                        : position.EntryPrice + atrFallbackDistance;
+                    method = "ATR emergency fallback";
+                }
+                else
+                {
+                    // Final recovery path if both timeframe ATR values are unavailable.
+                    double fixedDistance = Math.Max(FallbackStopPips * Symbol.PipSize, 2 * Symbol.TickSize);
+                    if (!IsFinitePositive(fixedDistance))
+                        return RetryInitialStop(position, "Neither ATR nor a valid fixed-pip fallback distance is available.");
+
+                    plannedStop = position.TradeType == TradeType.Buy
+                        ? position.EntryPrice - fixedDistance
+                        : position.EntryPrice + fixedDistance;
+                    method = "fixed-pip fallback (ATR unavailable)";
+                }
                 usedFallback = true;
             }
 

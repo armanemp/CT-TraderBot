@@ -24,13 +24,7 @@ namespace cAlgo.Robots
             if (EntryCooldownBars > 0 && _lowerBars.Count - _lastEntryBarIndex < EntryCooldownBars)
                 return;
 
-            int openCount = 0;
-            foreach (var position in Positions)
-            {
-                if (position.SymbolName == SymbolName &&
-                    string.Equals(position.Label, AutoTradeLabel, StringComparison.Ordinal))
-                    openCount++;
-            }
+            int openCount = Positions.FindAll(AutoTradeLabel, SymbolName).Length;
             if (openCount >= MaximumOpenPositions)
                 return;
 

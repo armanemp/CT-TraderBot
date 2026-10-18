@@ -19,6 +19,8 @@ The platform-independent tests cover:
 
 Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
 
+The latest adapter patch also rejects NaN/infinity for every configurable numeric parameter, honours the configured multi-bar M5 wick fallback and fixed-pip fallback when ATR is unavailable, and reduces hot-path scans to the cBot label/current symbol. These adapter changes require CI and local compile verification; unit tests do not simulate broker position or storage behavior.
+
 The build script runs the test suite after compiling the solution and checks the generated CTTraderBot.algo path. Unit tests cover pure rules only; they do not simulate broker fills, LocalStorage failure, stop rejection, multi-instance races or profitability.
 
 ## Minimum scenario matrix

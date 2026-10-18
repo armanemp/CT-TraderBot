@@ -10,10 +10,9 @@ namespace cAlgo.Robots
     {
         private void ManageCurrentSymbolPositions()
         {
-            // Copy first: an emergency ClosePosition call can remove a position while management is running.
-            var snapshot = new List<Position>();
-            foreach (var position in Positions)
-                snapshot.Add(position);
+            // Query only this bot's label on this symbol instead of scanning the account's
+            // entire position collection on every market tick. FindAll returns a stable array.
+            var snapshot = Positions.FindAll(AutoTradeLabel, SymbolName);
 
             foreach (var position in snapshot)
             {
@@ -67,12 +66,7 @@ namespace cAlgo.Robots
 
         private bool IsPositionStillOpen(long positionId)
         {
-            foreach (var current in Positions)
-            {
-                if (current.Id == positionId)
-                    return true;
-            }
-            return false;
+            return Positions.FindById(positionId) != null;
         }
     }
 }

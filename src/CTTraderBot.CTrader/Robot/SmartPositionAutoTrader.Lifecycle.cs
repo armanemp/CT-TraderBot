@@ -81,6 +81,12 @@ namespace cAlgo.Robots
 
         private bool ValidateParameters()
         {
+            if (!AreNumericParametersFinite())
+            {
+                Diag("ERROR: Numeric parameters must be finite numbers; NaN and infinity are not valid.");
+                return false;
+            }
+
             if (EntryFastEmaPeriod >= EntrySlowEmaPeriod)
             {
                 Diag("ERROR: Fast EMA period must be lower than Slow EMA period.");
@@ -126,11 +132,64 @@ namespace cAlgo.Robots
                 Diag("ERROR: Auto-trade label cannot be blank because it is also used to scope position management.");
                 return false;
             }
-            if (MaximumOpenPositions < 1 || AtrPeriod < 2 || RetryIntervalMilliseconds < 100)
+            if (MaximumOpenPositions < 1 || AtrPeriod < 2 || RetryIntervalMilliseconds < 100 ||
+                StructuralWickLookbackBars < 1 || M5FallbackAtrMultiplier <= 0 || FallbackStopPips <= 0)
             {
                 Diag("ERROR: One or more essential parameters are outside safe operating bounds.");
                 return false;
             }
+            return true;
+        }
+
+        private bool AreNumericParametersFinite()
+        {
+            double[] values =
+            {
+                MicroSwingBreakoutBufferAtr,
+                VolumeInLots,
+                MaximumAutoVolumeLots,
+                MinimumAutoVolumeLots,
+                MaximumFreeMarginUsagePercent,
+                MaximumSpreadPips,
+                MaximumEntryRiskAtr,
+                MinimumOpportunityRewardR,
+                MinimumOpportunityRiskPercent,
+                MaximumOpportunityRiskPercent,
+                AbsoluteRiskCeilingPercent,
+                MinimumEntryQualityScore,
+                MinimumM5TrendStrength,
+                MaximumSpreadToAtrRatio,
+                MaximumEntryExtensionAtr,
+                SizingSlippageReservePips,
+                M5SpreadBufferMultiplier,
+                M5AtrBufferFraction,
+                M5FallbackAtrMultiplier,
+                MaximumInitialStopAtr,
+                MinimumAdaptiveSuggestedTpR,
+                MaximumSuggestedTpR,
+                SuggestedTakeProfitR,
+                SuggestedTpStructureBufferAtr,
+                InitialStopAtrMultiplier,
+                FallbackStopPips,
+                BrokerDistanceSafetyTicks,
+                BreakEvenTriggerR,
+                EarlyBreakEvenTriggerR,
+                StrongTrendBreakEvenTriggerR,
+                BreakEvenBufferPips,
+                BreakEvenExtraSafetyPips,
+                TrailingStartR,
+                TrailingAtrMultiplier,
+                MinimumProfitLockR,
+                TrailingStructureAtrBufferFraction,
+                MinimumStopUpdateStepPips
+            };
+
+            foreach (double value in values)
+            {
+                if (double.IsNaN(value) || double.IsInfinity(value))
+                    return false;
+            }
+
             return true;
         }
 

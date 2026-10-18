@@ -68,7 +68,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Phase 5 — Initial protection
 - [ ] Isolate stop-anchor calculation from broker submission.
-- [ ] Provide a genuine fixed-pip fallback when structure/ATR is unavailable, or fail safely before entry.
+- [x] Use the configured fixed-pip fallback when both lower-TF and M5 ATR are unavailable; apply `M5FallbackAtrMultiplier` in ATR recovery. This commit awaits CI/local validation.
 - [ ] Validate broker distance, tick size, side, and quote side consistently.
 - [x] Make SL rejection/unprotected status visible on the volume panel, throttled to avoid repeated warning floods; preserve bounded retry behavior. Newer code commit awaits CI/local validation.
 - **Exit gate:** long/short geometry tests pass and SL rejection is demonstrated on demo.
@@ -100,7 +100,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate:** valid/invalid input, toggles and shutdown cleanup are checked in cTrader.
 
 ## Phase 10 — Performance and acceptance
-- [ ] Remove redundant full-position-set scans from tick/timer hot paths.
+- [x] Filter position lookups by exact cBot label and symbol and use `Positions.FindById` for existence checks, avoiding repeated account-wide scans per tick. This commit awaits CI/local validation.
 - [ ] Measure CPU/latency with realistic tick and position counts.
 - [ ] Run tests, compile, static review, backtest and demo acceptance scenarios.
 - [ ] Record known limitations and release checklist.
