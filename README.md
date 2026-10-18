@@ -37,7 +37,7 @@ The only generated artifact intended for cTrader's local Robots directory is the
 
 `%USERPROFILE%\\Documents\\cAlgo\\Sources\\Robots\\`
 
-The build configuration will use the official `cTrader.Automate` build/publish behavior so a successful cBot build generates the `.algo` artifact and publishes it to the appropriate Windows cTrader folder. Generated `.algo` files are ignored by Git and must not be committed to the source repository. If building without that package's publish behavior, copy only the final `.algo` artifact to the Robots directory.
+The pinned `cTrader.Automate` package builds the cBot artifact. Because this nested project layout currently emits an intermediate file named `src.algo`, the project has a post-build copy step that publishes it under the stable name `CTTraderBot.algo` to the Robots directory. The post-build step fails if the expected intermediate artifact is missing. Generated `.algo` files are ignored by Git and are never committed to the source repository.
 
 ## Build
 
