@@ -41,15 +41,23 @@ The build configuration will use the official `cTrader.Automate` build/publish b
 
 ## Build
 
-The repository is currently an architecture/migration scaffold, not yet a complete compilable cBot. Do not attempt a build until the original source has been added and the cTrader project has been created.
-
-Once the projects are present, run the pure core tests:
+The cTrader build is configured through the pinned `cTrader.Automate` package. After the baseline-split GitHub Actions workflow succeeds and the generated Robot files are present, run from PowerShell:
 
 ```powershell
-dotnet test .\\tests\\CTTraderBot.Core.Tests\\CTTraderBot.Core.Tests.csproj
+cd "$HOME\Desktop\CT-TraderBot"
+git pull --ff-only origin main
+.\scripts\build-cbot.ps1
 ```
 
-The cTrader integration project will reference the API/Automate package supported by the installed cTrader version. Any local API assembly path must be supplied as a local build property; do not commit machine-specific absolute paths. Compile and smoke-test the Robot in cTrader Automate as well as with the command line.
+The build script restores and builds `CT-TraderBot.sln`, then verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
+
+To compile only the current project scaffold before the Robot source is integrated, run:
+
+```powershell
+.\scripts\build-cbot.ps1 -AllowScaffoldBuild
+```
+
+That command explicitly reports a scaffold-only compile and does **not** produce a tradable bot. The unit-test project will be added with the first tested pure policy extraction; until then there is no meaningful `dotnet test` target.
 
 ## Safety
 
