@@ -108,3 +108,8 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Working agreement
 Keep each phase small enough to review. Do not combine behavior redesign with mechanical extraction. Record tests actually run—not tests merely planned.
+
+
+## Audit addendum — entry veto visibility
+- [x] Add a separate rate-limited entry-status line so users can distinguish common veto reasons without overwriting protection warnings. Code committed in `8aecbef`; CI and local build validation pending.
+- [x] Pause new entries while position-state or ownership storage is known unhealthy; runtime recovery/storage scenarios remain required.

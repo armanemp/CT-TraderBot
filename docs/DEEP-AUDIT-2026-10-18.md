@@ -105,3 +105,8 @@ Possible later candidates, only if independent tests show improvement: volatilit
 ## Release gate
 
 Do not use a live account based only on a successful build or unit tests. Require a clean latest local build, green CI, correct CTTraderBot.algo output, proof that every live position has an accepted broker SL, restart/storage/ownership acceptance, and documented out-of-sample plus demo evidence. The strict M5 option must reject neutral or opposing M5 direction by design.
+
+
+## Audit addendum — entry veto visibility
+
+Code commit `8aecbef` adds a separate, rate-limited entry-status line for common entry filters, preserving the existing panel notice used for protection warnings. It also gates new entries when known position-state or ownership storage failures occur. This is a visibility and fail-closed change rather than a strategy threshold change. CI/local validation is pending; no profitability claim is implied.

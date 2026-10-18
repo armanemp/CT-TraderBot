@@ -45,3 +45,8 @@ Record commit SHA; cTrader and API assembly versions; symbol/account/chart/lower
 ## Release rule
 
 A successful unit test or compile is not proof a broker accepted a protective stop, that a risk estimate is exact, or that a strategy is profitable. Do not deploy live until required demo scenarios pass and residual risks are explicitly accepted.
+
+
+## Entry-veto diagnostics
+
+The chart now has a separate, rate-limited entry-status line for common veto reasons (history, ATR, spread, M5 strength, EMA extension, structural stop, reward/risk, setup quality, risk sizing and storage health). It does not replace position-protection warnings. New entries are paused while position-state or ownership storage is known unhealthy. Code commit `8aecbef` requires CI and local compile verification; core tests do not simulate broker or storage failure.
