@@ -282,6 +282,8 @@ namespace cAlgo.Robots
             // (legacy/adopted position); such positions still require a usable broker SL.
             public double ApprovedRiskAmount;
             public bool RiskReviewRequired;
+            // True when a persisted/approved budget cannot be trusted; never auto-clear this guard.
+            public bool RiskBudgetUnavailable;
             public double LastSuggestedTpPrice;
             public bool LastSuggestedTpReached;
             public double LastTrendScore;

@@ -58,7 +58,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Phase 4 — Risk and volume
 - [x] Add a pure post-fill risk assessment with a 5% tolerance and fail-closed handling for non-finite/missing estimates.
-- [x] Persist the entry's approved loss amount and risk-review state in versioned v2 position state while continuing to read legacy four-/five-field state.
+- [x] Persist the entry's approved loss amount and risk-review state in versioned v3 position state while continuing to read v2 and legacy four-/five-field state; malformed/unreadable saved risk data holds the review lock.
 - [x] When post-fill structural SL risk exceeds the approved budget by more than tolerance, retain the valid broker SL, visibly flag the position and pause further entries until estimated downside risk returns within tolerance or the position closes. Do not tighten the stop inside structure or force-close solely from an estimate.
 - [ ] Demo-test risk overruns, missing/rejected SL, restart recovery and risk-guard release with the target broker.
 - [ ] Include commission in pre-trade estimates where the broker's commission model can be measured reliably; otherwise label its omission explicitly.

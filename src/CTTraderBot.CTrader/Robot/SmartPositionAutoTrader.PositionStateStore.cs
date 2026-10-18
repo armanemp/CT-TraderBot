@@ -15,6 +15,7 @@ namespace cAlgo.Robots
                 return state;
 
             string saved = null;
+            bool riskBudgetUnavailable = false;
             try
             {
                 saved = LocalStorage.GetString(GetStateKey(position.Id), SharedScope);
@@ -23,8 +24,9 @@ namespace cAlgo.Robots
             catch (Exception ex)
             {
                 _positionStateStorageHealthy = false;
+                riskBudgetUnavailable = true;
                 WarnThrottled(position, "Could not restore saved position state; falling back to estimated R: " + ex.Message);
-                SetVolumeNotice("Position state could not be read. Any recovered R/TP guide will be marked estimated.", true);
+                SetVolumeNotice("Position state could not be read. The approved risk budget is unknown; new entries remain paused while this position is open.", true);
             }
 
             if (!string.IsNullOrWhiteSpace(saved))
@@ -36,12 +38,26 @@ namespace cAlgo.Robots
                 long storedEntryTimeTicks;
                 bool storedEstimated = true;
                 bool storedReviewRequired = false;
+                bool storedBudgetUnavailable = false;
+                bool isVersion3 = parts.Length == 9 && string.Equals(parts[0], "v3", StringComparison.Ordinal);
                 bool isVersion2 = parts.Length == 8 && string.Equals(parts[0], "v2", StringComparison.Ordinal);
                 bool isLegacy = parts.Length == 4 || parts.Length == 5;
 
                 bool parsedFields = false;
-                if (isVersion2)
+                if (isVersion3)
                 {
+                    parsedFields =
+                        bool.TryParse(parts[5], out storedEstimated) &&
+                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
+                        bool.TryParse(parts[7], out storedReviewRequired) &&
+                        bool.TryParse(parts[8], out storedBudgetUnavailable) &&
+                        !double.IsNaN(storedApprovedRisk) &&
+                        !double.IsInfinity(storedApprovedRisk) &&
+                        storedApprovedRisk >= 0.0;
+                }
+                else if (isVersion2)
+                {
+                    // Accept the in-development v2 shape and immediately upgrade it to v3.
                     parsedFields =
                         bool.TryParse(parts[5], out storedEstimated) &&
                         double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
@@ -56,8 +72,8 @@ namespace cAlgo.Robots
                     parsedFields = parts.Length == 4 || bool.TryParse(parts[4], out storedEstimated);
                 }
 
-                int offset = isVersion2 ? 1 : 0;
-                if ((isVersion2 || isLegacy) && parsedFields &&
+                int offset = isVersion3 || isVersion2 ? 1 : 0;
+                if ((isVersion3 || isVersion2 || isLegacy) && parsedFields &&
                     double.TryParse(parts[offset], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
                     double.TryParse(parts[offset + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
                     string.Equals(parts[offset + 2], position.TradeType.ToString(), StringComparison.Ordinal) &&
@@ -71,15 +87,21 @@ namespace cAlgo.Robots
                     {
                         InitialRiskDistance = storedRisk,
                         RiskDistanceEstimated = storedEstimated,
-                        ApprovedRiskAmount = isVersion2 ? storedApprovedRisk : 0.0,
-                        RiskReviewRequired = isVersion2 && storedReviewRequired
+                        ApprovedRiskAmount = isVersion3 || isVersion2 ? storedApprovedRisk : 0.0,
+                        RiskReviewRequired = (isVersion3 || isVersion2) && storedReviewRequired,
+                        RiskBudgetUnavailable = isVersion3 && storedBudgetUnavailable
                     };
                     _states[position.Id] = state;
-                    if (!isVersion2)
-                        SaveState(position, state); // Upgrade legacy state to the versioned representation.
+                    if (!isVersion3)
+                        SaveState(position, state); // Upgrade v2/legacy state to the current versioned representation.
                     return state;
                 }
             }
+
+            // A non-empty record that could not be validated may have contained the approved
+            // budget. Do not replace it with an estimated R and silently treat the position safe.
+            if (!string.IsNullOrWhiteSpace(saved))
+                riskBudgetUnavailable = true;
 
             double risk;
             bool riskEstimated;
@@ -108,7 +130,9 @@ namespace cAlgo.Robots
             state = new PositionState
             {
                 InitialRiskDistance = risk,
-                RiskDistanceEstimated = riskEstimated
+                RiskDistanceEstimated = riskEstimated,
+                RiskReviewRequired = riskBudgetUnavailable,
+                RiskBudgetUnavailable = riskBudgetUnavailable
             };
             _states[position.Id] = state;
             SaveState(position, state);
@@ -117,9 +141,10 @@ namespace cAlgo.Robots
 
         private void SaveState(Position position, PositionState state)
         {
-            string value = string.Format(CultureInfo.InvariantCulture, "v2|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}",
+            string value = string.Format(CultureInfo.InvariantCulture, "v3|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}|{7}",
                 position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
-                state.RiskDistanceEstimated, Math.Max(0.0, state.ApprovedRiskAmount), state.RiskReviewRequired);
+                state.RiskDistanceEstimated, Math.Max(0.0, state.ApprovedRiskAmount), state.RiskReviewRequired,
+                state.RiskBudgetUnavailable);
             try
             {
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);

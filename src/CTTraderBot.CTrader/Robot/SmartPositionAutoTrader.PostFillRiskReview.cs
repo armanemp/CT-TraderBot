@@ -38,11 +38,13 @@ namespace cAlgo.Robots
 
             double riskPips = stopDistance / Symbol.PipSize +
                 Math.Max(0.0, SizingSlippageReservePips) + commissionPips;
-            if (!IsFinitePositive(riskPips))
+            if (double.IsNaN(riskPips) || double.IsInfinity(riskPips) || riskPips < 0.0)
                 return double.NaN;
 
             double estimatedLoss = Symbol.AmountRisked(position.VolumeInUnits, riskPips);
-            return IsFinitePositive(estimatedLoss) ? estimatedLoss : double.NaN;
+            return !double.IsNaN(estimatedLoss) && !double.IsInfinity(estimatedLoss) && estimatedLoss >= 0.0
+                ? estimatedLoss
+                : double.NaN;
         }
 
         private void RefreshPostFillRiskReview(Position position, PositionState state, bool persistChanges = true)
@@ -58,6 +60,11 @@ namespace cAlgo.Robots
             {
                 requiresReview = true;
                 reason = "the position has no usable broker stop-loss";
+            }
+            else if (state.RiskBudgetUnavailable)
+            {
+                requiresReview = true;
+                reason = "the saved approved risk budget is missing or corrupt and cannot be verified";
             }
             else if (state.ApprovedRiskAmount <= 0.0)
             {
