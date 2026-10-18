@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using CTTraderBot.Core.Policies;
 using cAlgo.API;
 using cAlgo.API.Indicators;
 
@@ -31,108 +32,35 @@ namespace cAlgo.Robots
 
             if (!string.IsNullOrWhiteSpace(saved))
             {
-                var parts = saved.Split('|');
-                double storedEntry;
-                double storedRisk;
-                double storedApprovedRisk = 0.0;
-                long storedEntryTimeTicks;
-                bool storedEstimated = true;
-                bool storedReviewRequired = false;
-                bool storedBudgetUnavailable = false;
-                bool storedEmergencyCloseRequired = false;
-                bool storedRiskReviewSticky = false;
-                bool isVersion5 = parts.Length == 11 && string.Equals(parts[0], "v5", StringComparison.Ordinal);
-                bool isVersion4 = parts.Length == 10 && string.Equals(parts[0], "v4", StringComparison.Ordinal);
-                bool isVersion3 = parts.Length == 9 && string.Equals(parts[0], "v3", StringComparison.Ordinal);
-                bool isVersion2 = parts.Length == 8 && string.Equals(parts[0], "v2", StringComparison.Ordinal);
-                bool isLegacy = parts.Length == 4 || parts.Length == 5;
-
-                bool parsedFields = false;
-                if (isVersion5)
-                {
-                    parsedFields =
-                        bool.TryParse(parts[5], out storedEstimated) &&
-                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
-                        bool.TryParse(parts[7], out storedReviewRequired) &&
-                        bool.TryParse(parts[8], out storedBudgetUnavailable) &&
-                        bool.TryParse(parts[9], out storedEmergencyCloseRequired) &&
-                        bool.TryParse(parts[10], out storedRiskReviewSticky) &&
-                        !double.IsNaN(storedApprovedRisk) &&
-                        !double.IsInfinity(storedApprovedRisk) &&
-                        storedApprovedRisk >= 0.0;
-                }
-                else if (isVersion4)
-                {
-                    parsedFields =
-                        bool.TryParse(parts[5], out storedEstimated) &&
-                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
-                        bool.TryParse(parts[7], out storedReviewRequired) &&
-                        bool.TryParse(parts[8], out storedBudgetUnavailable) &&
-                        bool.TryParse(parts[9], out storedEmergencyCloseRequired) &&
-                        !double.IsNaN(storedApprovedRisk) &&
-                        !double.IsInfinity(storedApprovedRisk) &&
-                        storedApprovedRisk >= 0.0;
-                }
-                else if (isVersion3)
-                {
-                    parsedFields =
-                        bool.TryParse(parts[5], out storedEstimated) &&
-                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
-                        bool.TryParse(parts[7], out storedReviewRequired) &&
-                        bool.TryParse(parts[8], out storedBudgetUnavailable) &&
-                        !double.IsNaN(storedApprovedRisk) &&
-                        !double.IsInfinity(storedApprovedRisk) &&
-                        storedApprovedRisk >= 0.0;
-                }
-                else if (isVersion2)
-                {
-                    // Accept the earlier v2 state shape and immediately upgrade it to v4.
-                    parsedFields =
-                        bool.TryParse(parts[5], out storedEstimated) &&
-                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
-                        bool.TryParse(parts[7], out storedReviewRequired) &&
-                        !double.IsNaN(storedApprovedRisk) &&
-                        !double.IsInfinity(storedApprovedRisk) &&
-                        storedApprovedRisk >= 0.0;
-                }
-                else if (isLegacy)
-                {
-                    // Four-field records predate the estimate marker; five-field records contain it.
-                    parsedFields = parts.Length == 4 || bool.TryParse(parts[4], out storedEstimated);
-                }
-
-                int offset = isVersion5 || isVersion4 || isVersion3 || isVersion2 ? 1 : 0;
-                if ((isVersion5 || isVersion4 || isVersion3 || isVersion2 || isLegacy) && parsedFields &&
-                    double.TryParse(parts[offset], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
-                    double.TryParse(parts[offset + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
-                    string.Equals(parts[offset + 2], position.TradeType.ToString(), StringComparison.Ordinal) &&
-                    long.TryParse(parts[offset + 3], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedEntryTimeTicks) &&
-                    Math.Abs(storedEntry - position.EntryPrice) <= Symbol.TickSize * 0.5 &&
-                    storedEntryTimeTicks == position.EntryTime.Ticks &&
-                    IsFinitePositive(storedRisk) &&
-                    storedRisk >= Symbol.TickSize * 0.5)
+                PositionRiskStateRecord restored;
+                if (PositionRiskStateCodec.TryDeserialize(
+                    saved,
+                    position.EntryPrice,
+                    position.TradeType.ToString(),
+                    position.EntryTime.Ticks,
+                    Symbol.TickSize,
+                    out restored))
                 {
                     state = new PositionState
                     {
-                        InitialRiskDistance = storedRisk,
-                        RiskDistanceEstimated = storedEstimated,
-                        ApprovedRiskAmount = isVersion5 || isVersion4 || isVersion3 || isVersion2 ? storedApprovedRisk : 0.0,
-                        RiskReviewRequired = (isVersion5 || isVersion4 || isVersion3 || isVersion2) && storedReviewRequired,
-                        RiskBudgetUnavailable = (isVersion5 || isVersion4 || isVersion3) && storedBudgetUnavailable,
-                        EmergencyCloseRequired = (isVersion5 || isVersion4) && storedEmergencyCloseRequired,
-                        RiskReviewSticky = isVersion5 && storedRiskReviewSticky
+                        InitialRiskDistance = restored.InitialRiskDistance,
+                        RiskDistanceEstimated = restored.RiskDistanceEstimated,
+                        ApprovedRiskAmount = restored.ApprovedRiskAmount,
+                        RiskReviewRequired = restored.RiskReviewRequired,
+                        RiskBudgetUnavailable = restored.RiskBudgetUnavailable,
+                        EmergencyCloseRequired = restored.EmergencyCloseRequired,
+                        RiskReviewSticky = restored.RiskReviewSticky
                     };
                     _states[position.Id] = state;
-                    if (!isVersion5)
-                        SaveState(position, state); // Upgrade earlier versioned/legacy state to current v5.
+                    if (restored.Version != PositionRiskStateCodec.CurrentVersion)
+                        SaveState(position, state); // Upgrade every accepted legacy/versioned record to current v5.
                     return state;
                 }
-            }
 
-            // A non-empty record that could not be validated may have contained the approved
-            // budget. Do not replace it with an estimated R and silently treat the position safe.
-            if (!string.IsNullOrWhiteSpace(saved))
+                // A non-empty record that failed parsing/identity validation may have contained
+                // the approved budget or an emergency-close request; keep the entry lock closed.
                 riskBudgetUnavailable = true;
+            }
 
             double risk;
             bool riskEstimated;
@@ -172,12 +100,21 @@ namespace cAlgo.Robots
 
         private void SaveState(Position position, PositionState state)
         {
-            string value = string.Format(CultureInfo.InvariantCulture, "v5|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}|{7}|{8}|{9}",
-                position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
-                state.RiskDistanceEstimated, Math.Max(0.0, state.ApprovedRiskAmount), state.RiskReviewRequired,
-                state.RiskBudgetUnavailable, state.EmergencyCloseRequired, state.RiskReviewSticky);
             try
             {
+                string value = PositionRiskStateCodec.Serialize(new PositionRiskStateRecord
+                {
+                    EntryPrice = position.EntryPrice,
+                    InitialRiskDistance = state.InitialRiskDistance,
+                    TradeType = position.TradeType.ToString(),
+                    EntryTimeTicks = position.EntryTime.Ticks,
+                    RiskDistanceEstimated = state.RiskDistanceEstimated,
+                    ApprovedRiskAmount = Math.Max(0.0, state.ApprovedRiskAmount),
+                    RiskReviewRequired = state.RiskReviewRequired,
+                    RiskBudgetUnavailable = state.RiskBudgetUnavailable,
+                    EmergencyCloseRequired = state.EmergencyCloseRequired,
+                    RiskReviewSticky = state.RiskReviewSticky
+                });
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);
                 LocalStorage.Flush(SharedScope);
                 _positionStateStorageHealthy = true;
