@@ -34,24 +34,27 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Phase 2.1 — First pure policy extraction and regression harness
 **Status: Verified**
-- [x] Extract the existing adaptive risk-budget formula into `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`.
-- [x] Keep the cBot as an adapter: pass existing parameter values to the policy and use its result; do not change the calculation formula.
-- [x] Add a .NET 6 NUnit test project and boundary tests for score clamping, squared quality curve, adaptive-disabled behavior, maximum/minimum boundaries and hard ceiling.
-- [x] Add the test project to the solution and make both the Windows build workflow and `scripts/build-cbot.ps1` run the tests.
-- [x] Local validation recorded 2026-10-18 at commit `25bb3e1`: `scripts/build-cbot.ps1` completed with 0 warnings/errors, `CTTraderBot.algo` was published to `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo`, and NUnit passed 24/24 tests.
-- [x] Combined Windows CI build and test run passed at commit `25bb3e1`: [GitHub Actions](https://github.com/armanemp/CT-TraderBot/actions/runs/39084454286).
-- **Scope:** only the scalar risk-budget and fresh-crossing rules are covered. This is not yet a complete risk/sizing or entry-policy test suite.
+- [x] Extract the existing adaptive risk-budget formula into the platform-independent core.
+- [x] Keep the cBot as adapter and preserve the valid-input calculation.
+- [x] Add .NET 6 NUnit boundary tests for score curve, limits, hard ceiling and non-finite configuration.
+- [x] Integrate the test project into the solution, Windows CI and local build script.
+- [x] Local validation at commit 6516411: 0 build warnings/errors, CTTraderBot.algo published, and all 34 NUnit tests passed.
+- [x] Windows CI at commit 6516411 passed: https://github.com/armanemp/CT-TraderBot/actions/runs/39084630747.
+- **Scope:** the pure risk-budget function is not a complete test of broker sizing or realized trade risk.
 
 ## Phase 3 — Entry policy isolation
-- [x] Extract the fresh above/below quote-cross predicate into `FreshPriceCrossPolicy` without changing entry criteria; cover equality edges, stale crossings and missing previous quotes with deterministic tests.
-- [ ] Extract the M5 EMA/closed-price direction predicate into `M5TrendBiasPolicy`; implementation and deterministic boundary tests are committed, with CI/local validation pending.
-- [ ] Separate the remaining M5 trend-strength context, closed-bar setup and intrabar crossing policies.
-- [ ] Make strict M5 alignment a true hard filter when enabled; retain soft-filter behavior only when explicitly selected.
-- [ ] Evaluate the actual live breakout event, not only the previous closed candle.
+- [x] Extract the fresh above/below quote-cross predicate and cover equality, stale crossings, missing prior quotes and non-finite inputs.
+- [x] Extract M5 EMA/closed-price direction into a pure policy; verified locally/CI at commit 6516411.
+- [x] Fix the strict M5 alignment contract: when enabled, neutral or conflicting M5 bias must reject the signal; a lower-timeframe structure break may only override the soft-context path.
+- [x] Add deterministic policy tests for strict matching, opposite direction, neutral bias, and soft mode.
+- [ ] Confirm the current audit commit builds and the complete enlarged test suite passes.
+- [ ] Separate remaining M5 trend strength, closed-bar setup and intrabar crossing decisions.
 - [ ] Test lower-timeframe swing lookback and cooldown boundaries.
-- **Exit gate:** deterministic tests cover both directions, conflicting signals, fresh crossings and cooldown edges.
+- **Exit gate:** both-direction tests, conflict/fresh-cross/cooldown coverage, CI and local build evidence.
 
 ## Phase 4 — Risk and volume
+- [ ] Reconcile pre-trade risk with the actual fill and the post-fill absolute structural SL; define/demo-test a response when expected loss exceeds the approved budget.
+- [ ] Include commission in pre-trade estimates where the broker's commission model can be measured reliably; otherwise label its omission explicitly.
 - [ ] Separate the risk budget from broker margin calculations.
 - [ ] Validate manual volume, auto minimum/maximum volume and broker volume steps.
 - [ ] Define commission/slippage reserves and never imply estimated loss is exact.

@@ -4,7 +4,7 @@ A maintainable cTrader Automate cBot project for the SmartPosition M5 Micro-Swin
 
 ## Project status
 
-**Migration status:** the original single-file source is captured under `legacy/reference/`; the first behavior-preserving pass split its 74 methods into 11 C# files and compiled successfully on Windows CI. Standalone service extraction, a formal unit-test suite, local cTrader validation and demo acceptance remain in progress. The original source is the behavioral baseline.
+**Migration status:** the original single-file source is captured under legacy/reference; the 74-method behavior-preserving split has been compiled in Windows CI and locally. Three pure policies now have an NUnit regression harness. The audit is still in progress: broker/runtime acceptance, full entry/protection policy extraction, and evidence-based strategy evaluation remain open. The legacy source remains the behavior baseline.
 
 ## Goals
 
@@ -44,14 +44,14 @@ The pinned `cTrader.Automate` package builds and publishes the cBot. `Directory.
 The cTrader build is configured through the pinned `cTrader.Automate` package. After the baseline-split GitHub Actions workflow succeeds and the generated Robot files are present, run from PowerShell:
 
 ```powershell
-cd "$HOME\Desktop\CT-TraderBot"
+cd "$HOME\Desktop\GPT\CT-TraderBot"
 git pull --ff-only origin main
 .\scripts\build-cbot.ps1
 ```
 
 The build script restores and builds `CT-TraderBot.sln`, then verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
 
-There is not yet a standalone unit-test project. It will be added alongside the first extracted pure policy and its real tests; an empty test project will not be used as a placeholder.
+The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance.
 
 ## Safety
 

@@ -10,15 +10,15 @@
 
 ## Implemented unit tests
 
-The first extracted policy is `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`. The current test suite covers the squared quality curve, zero/one boundaries, below/above-range scores, disabled adaptive mode, a positive hard ceiling, a disabled ceiling, invalid bound ordering and non-finite quality input. `CTTraderBot.Core.Policies.FreshPriceCrossPolicy` additionally tests fresh above/below quote crossings, strict current-quote boundaries, a previous quote exactly at the trigger, stale crossings where price was already beyond the level, and absent/non-positive previous quotes. `CTTraderBot.Core.Policies.M5TrendBiasPolicy` separates the bullish/bearish/neutral M5 EMA and closed-price predicate, preserving the existing `fast > slow`, `close >= slow`, and `fast >= priorFast` bullish conditions and their bearish inverse.
+The platform-independent tests cover:
+- Adaptive risk-budget boundaries, squared quality curve, adaptive-off behavior, hard ceiling and invalid non-finite configuration.
+- Fresh quote crossings in each direction, strict trigger edges, stale levels, missing prior quotes and non-finite quote/trigger inputs.
+- M5 fast/slow EMA and closed-price direction rules, including neutral/conflicting and non-finite values.
+- Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 
-Run locally:
+Before the latest audit changes, commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 more test cases; that newer revision is not yet validated. Do not record the expected 55-test total as passed until both CI and the user's local build finish successfully.
 
-```powershell
-dotnet test .\tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj --configuration Release
-```
-
-The cBot build script and Windows CI execute this test project after the solution build. These tests verify the risk-budget calculation only; they do not prove order sizing, broker acceptance, realized loss or strategy profitability.
+The build script runs the test suite after compiling the solution and checks the generated CTTraderBot.algo path. Unit tests cover pure rules only; they do not simulate broker fills, LocalStorage failure, stop rejection, multi-instance races or profitability.
 
 ## Minimum scenario matrix
 
