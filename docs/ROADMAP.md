@@ -61,7 +61,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Persist the entry's approved loss amount, risk-review state, sticky structural-stop review, and emergency-close request in versioned v5 position state while continuing to read v2/v3/v4 and legacy four-/five-field state; missing/malformed/unreadable state for a managed position holds the review lock.
 - [x] When post-fill structural SL risk exceeds the approved budget by more than tolerance, retain the valid broker SL, visibly flag the position and pause further entries until estimated downside risk returns within tolerance or the position closes. Do not tighten the stop inside structure or force-close solely from an estimate.
 - [ ] Demo-test risk overruns, missing/rejected SL, restart recovery and risk-guard release with the target broker.
-- [ ] Include commission in pre-trade estimates where the broker's commission model can be measured reliably; otherwise label its omission explicitly.
+- [x] Include an adapter-side estimate of the symbol's one-way commission and minimum commission, convert costs to account currency, add round-turn commission and slippage to pre-trade loss, and solve auto volume against both risk and margin budgets. Unknown conversion/cost estimates block an order rather than silently assuming zero commission; broker-reported fills and actual fees still require demo verification.
 - [ ] Separate the risk budget from broker margin calculations.
 - [ ] Validate manual volume, auto minimum/maximum volume and broker volume steps.
 - [ ] Define commission/slippage reserves and never imply estimated loss is exact.
