@@ -62,10 +62,10 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] When post-fill structural SL risk exceeds the approved budget by more than tolerance, retain the valid broker SL, visibly flag the position and pause further entries until estimated downside risk returns within tolerance or the position closes. Do not tighten the stop inside structure or force-close solely from an estimate.
 - [ ] Demo-test risk overruns, missing/rejected SL, restart recovery and risk-guard release with the target broker.
 - [x] Include an adapter-side estimate of the symbol's one-way commission and minimum commission, convert costs to account currency, add round-turn commission and slippage to pre-trade loss, and solve auto volume against both risk and margin budgets. Unknown conversion/cost estimates block an order rather than silently assuming zero commission; broker-reported fills and actual fees still require demo verification.
-- [ ] Separate the risk budget from broker margin calculations.
+- [x] Keep risk and margin as separate constraints: first cap candidates by free margin, then solve volume against the approved cash-loss budget including stop distance, slippage reserve and estimated round-turn commission.
 - [ ] Validate manual volume, auto minimum/maximum volume and broker volume steps.
-- [ ] Define commission/slippage reserves and never imply estimated loss is exact.
-- [ ] Reconcile pre-trade and post-fill risk and define behavior when approved limits are exceeded.
+- [x] Apply the configured slippage reserve and broker commission schedule/minimum to pre-trade risk estimates; use the broker-reported entry commission plus reserve for post-fill assessment. Estimates remain approximate and do not include unknown fees or guarantee realized loss.
+- [x] Reconcile pre-trade budget with post-fill SL risk; persisted review state pauses new entries when protection is unusable, estimates are unknown, or estimated risk exceeds the budget by more than 5%. Keep the valid broker SL and avoid forced liquidation solely on an estimate.
 - [ ] Add account-wide open-risk controls only after a reliable current-SL risk source is defined.
 - **Exit gate:** sizing boundaries pass; demo quantities match symbol rules.
 
@@ -89,17 +89,17 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate:** calculations are independently testable and rendering is manually verified.
 
 ## Phase 8 — State and multi-instance management
-- [ ] Version persisted state and validate identity before restoring it.
-- [ ] Define behavior when local-storage reload/flush fails.
-- [ ] Document that device-scoped LocalStorage leases are not atomic mutual exclusion.
+- [x] Persist v5 position state and validate entry price, side, entry time and tick size before restore; retain v2/v3/v4 and legacy four-/five-field readers with upgrade to v5.
+- [x] Fail closed for fresh entries or management ownership when storage reads/refreshes fail; a failed position-state save raises a warning and prevents new entries until storage health recovers. Runtime failure scenarios still require desktop demo acceptance.
+- [x] Document that device-scoped LocalStorage leases are best-effort coordination, not atomic mutual exclusion; concurrent same-position races still require demo acceptance and cannot be proven by unit tests.
 - [ ] Prevent stale-state cleanup from deleting a possibly renewed lease.
 - [ ] Separate entry de-duplication from position-manager leases.
 - **Exit gate:** restart/recovery and feasible multi-instance race scenarios are documented and tested.
 
 ## Phase 9 — Chart controls and lifecycle
 - [ ] Move panel construction/input validation behind a UI adapter.
-- [ ] Detach event handlers and remove controls on stop.
-- [ ] Show active mode, risk/margin limits and safety warnings truthfully.
+- [x] Stop the retry timer, detach bar and position event handlers, remove chart TP guides, and remove the volume panel on shutdown.
+- [x] Show current entry state and warning/veto messages separately from the risk/protection notice, and surface estimated size/risk/margin before order submission; chart-side mode can be changed between Manual/Auto where supported.
 - **Exit gate:** valid/invalid input, toggles and shutdown cleanup are checked in cTrader.
 
 ## Phase 10 — Performance and acceptance
