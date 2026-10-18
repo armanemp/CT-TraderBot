@@ -6,7 +6,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AlgoName>CTTraderBot</AlgoName>
-    <AlgoPublish>true</AlgoPublish>
+    <!-- Publish is performed by a named copy target below. The Automate package
+         otherwise derives "src.algo" from this repository's nested project layout. -->
+    <AlgoPublish>false</AlgoPublish>
     <IncludeSource>false</IncludeSource>
     <IncludeSymbols>false</IncludeSymbols>
     <!-- Buildable as a scaffold until the real Robot entry point is imported. -->
@@ -18,4 +20,15 @@
     <PackageReference Include="cTrader.Automate" Version="1.0.21" />
     <ProjectReference Include="../CTTraderBot.Core/CTTraderBot.Core.csproj" />
   </ItemGroup>
+
+  <Target Name="PublishNamedCTraderAlgo" AfterTargets="Build" Condition="'$(AlgoBuild)' == 'true'">
+    <PropertyGroup>
+      <_BuiltCTraderAlgo>$(TargetDir)src.algo</_BuiltCTraderAlgo>
+      <_PublishedCTraderAlgo>$(USERPROFILE)\Documents\cAlgo\Sources\Robots\CTTraderBot.algo</_PublishedCTraderAlgo>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_BuiltCTraderAlgo)')" Text="cTrader Automate did not produce the expected artifact '$(_BuiltCTraderAlgo)'. Review the Automate SDK output before publishing." />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_PublishedCTraderAlgo)'))" />
+    <Copy SourceFiles="$(_BuiltCTraderAlgo)" DestinationFiles="$(_PublishedCTraderAlgo)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Published cBot artifact: $(_PublishedCTraderAlgo)" />
+  </Target>
 </Project>
