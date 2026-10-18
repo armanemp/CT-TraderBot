@@ -31,7 +31,7 @@ docs/
 
 ## Source and compiled cBot locations
 
-Keep this Git repository where it was cloned (for example `%USERPROFILE%\\Desktop\\CT-TraderBot`). **Do not move the source repository into cTrader's Robots folder.**
+Keep this Git repository where it was cloned (for this checkout: `%USERPROFILE%\\Desktop\\GPT\\CT-TraderBot`). **Do not move the source repository into cTrader's Robots folder.**
 
 The only generated artifact intended for cTrader's local Robots directory is the compiled `.algo` file:
 
@@ -51,7 +51,7 @@ git pull --ff-only origin main
 
 The build script restores and builds `CT-TraderBot.sln`, then verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
 
-The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance.
+The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance. The current state/lease design is for local desktop cTrader: official cTrader documentation says LocalStorage Reload/Flush are unsupported no-ops in Cloud, without an error. Cloud deployment must remain unsupported until the persistence/ownership design is replaced.
 
 ## Safety
 
