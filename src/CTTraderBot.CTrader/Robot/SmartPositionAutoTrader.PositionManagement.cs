@@ -66,7 +66,15 @@ namespace cAlgo.Robots
 
         private bool IsPositionStillOpen(long positionId)
         {
-            return Positions.FindById(positionId) != null;
+            // This pinned cTrader API exposes FindById(int), while the bot persists IDs as long.
+            // Keep the comparison type-safe and scan only this bot's usually small filtered set.
+            foreach (var current in Positions.FindAll(AutoTradeLabel, SymbolName))
+            {
+                if (current.Id == positionId)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
