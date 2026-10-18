@@ -11,7 +11,7 @@ This is a source-level review of the current repository: all 11 split cBot sourc
 - CTTraderBot.algo was published to the cTrader Robots directory.
 - Windows CI passed for that same baseline: https://github.com/armanemp/CT-TraderBot/actions/runs/39084630747.
 
-The code-audit commit 0f4b29a passed Windows CI with a successful Release build, zero warnings/errors, and 55/55 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The entry-diagnostics and module-split code at commit 226d7bb passed Windows CI with a successful Release build, zero warnings/errors, and 69/69 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. A local build of this latest code and runtime/demo acceptance remain pending. A successful build or unit test is not evidence of profitability.
+The code-audit commit 0f4b29a passed Windows CI with a successful Release build, zero warnings/errors, and 55/55 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The entry-diagnostics and entry/protection module split at commit 226d7bb passed Windows CI with a Release build, zero warnings/errors, and 69/69 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. The latest stop-geometry policy at code commit 14d2711 passed with zero warnings/errors and 87/87 NUnit tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087296809. A local build of the current head and runtime/demo acceptance remain pending. A successful build or unit test is not evidence of profitability.
 
 ## What the cBot does
 
@@ -120,3 +120,8 @@ The entry and protection responsibilities are now split across named partial-cla
 ## Audit addendum — protective stop geometry
 
 A new core policy isolates the stop-side predicate, broker minimum-distance calculation, price tick normalization and monotonic more-protective-stop selection. It now has deterministic numeric tests for both directions and invalid inputs. CI/local validation pending. This does not simulate broker-side SL acceptance/rejection.
+
+
+## Audit addendum — stop-price policy
+
+The pure `CTTraderBot.Core.Policies.ProtectiveStopPolicy` now covers the loss-side check, minimum broker-distance conversion, tick-size normalization and more-protective-stop selection. Its long/short boundary tests are included in the successful 87-test CI run at commit `14d2711`. Broker acceptance/rejection and live quote races remain platform-level test requirements.

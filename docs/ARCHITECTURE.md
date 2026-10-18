@@ -47,7 +47,7 @@ The source split is kept at responsibility boundaries:
 - Swing/ATR/forward-barrier calculations: `SmartPositionAutoTrader.EntryStructure.cs`
 - Setup scoring and entry reward/risk: `SmartPositionAutoTrader.EntryQuality.cs`
 - Entry veto telemetry: `SmartPositionAutoTrader.EntryDiagnostics.cs`
-- Initial SL submission, BE/trailing and price geometry: `SmartPositionAutoTrader.InitialProtection.cs`, `SmartPositionAutoTrader.BreakEvenTrailing.cs`, `SmartPositionAutoTrader.StopPriceRules.cs`
+- Initial SL submission, BE/trailing and cTrader integration: `SmartPositionAutoTrader.InitialProtection.cs`, `SmartPositionAutoTrader.BreakEvenTrailing.cs`, `SmartPositionAutoTrader.StopPriceRules.cs`; pure numeric stop rules live in `CTTraderBot.Core.Policies.ProtectiveStopPolicy` and are covered by NUnit tests.
 
 These are partial-class adapter modules today, not all independent domain services yet. The last mechanical split moved existing methods and was compiled/tested in Windows CI at commit `226d7bb`; current local build and cTrader runtime acceptance remain separate release gates.
 

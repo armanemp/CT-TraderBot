@@ -48,7 +48,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Fix the strict M5 alignment contract: when enabled, neutral or conflicting M5 bias must reject the signal; a lower-timeframe structure break may only override the soft-context path.
 - [x] Add deterministic policy tests for strict matching, opposite direction, neutral bias, and soft mode.
 - [x] Separate entry reward/risk screening from the adaptive chart-only TP guide; screening now uses the configured base R and caps it at a confirmed forward structural barrier rather than borrowing an aspirational guide extension.
-- [x] Verify entry-screening policy in Windows CI: 69/69 tests passed at commit `226d7bb`; a local build of that newer ref is still pending.
+- [x] Verify entry-screening policy in Windows CI: latest validation at commit `14d2711` passed 87/87 tests with 0 warnings/errors; the user's local build for this newest revision remains pending.
 - [x] Windows CI at code commit 0f4b29a passed the complete 55-test suite with 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020.
 - [x] Follow-on code commit 5004b86 also passed all Windows CI steps, including build and unit tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978.
 - [ ] User to run the current repository revision locally; broker storage, restart and position-management acceptance still require cTrader demo tests.
@@ -68,7 +68,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 
 ## Phase 5 — Initial protection
 - [ ] Isolate stop-anchor calculation from broker submission.
-- [x] Use the configured fixed-pip fallback when both lower-TF and M5 ATR are unavailable; apply `M5FallbackAtrMultiplier` in ATR recovery. Windows CI passed at `226d7bb`; current local validation pending.
+- [x] Use the configured fixed-pip fallback when both lower-TF and M5 ATR are unavailable; apply `M5FallbackAtrMultiplier` in ATR recovery. Windows CI passed at `226d7bb`; the latest complete suite passed at `14d2711`.
 - [ ] Validate broker distance, tick size, side, and quote side consistently.
 - [x] Make SL rejection/unprotected status visible on the volume panel, throttled to avoid repeated warning floods; preserve bounded retry behavior. Verified by Windows CI at `8d519b2` and revalidated at `226d7bb`.
 - **Exit gate:** long/short geometry tests pass and SL rejection is demonstrated on demo.
@@ -111,15 +111,20 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 
 
 ## Audit addendum — entry veto visibility
-- [x] Add a separate rate-limited entry-status line so users can distinguish common veto reasons without overwriting protection warnings. Code committed in `8aecbef`; CI and local build validation pending.
+- [x] Add a separate rate-limited entry-status line so users can distinguish common veto reasons without overwriting protection warnings. Windows CI passed at `8d519b2` and was revalidated after module splitting at `226d7bb` and stop-policy extraction at `14d2711`.
 - [x] Pause new entries while position-state or ownership storage is known unhealthy; runtime recovery/storage scenarios remain required.
 
 
 ## Audit addendum — module boundaries
-- [x] Split entry execution, signal, structure and scoring methods into separate partial-class modules without changing method bodies. Windows CI passed at `226d7bb` with 69/69 tests and 0 warnings/errors.
+- [x] Split entry execution, signal, structure and scoring methods into separate partial-class modules without changing method bodies. Windows CI passed at `226d7bb` with 69/69 tests; the subsequent stop-policy extraction was validated at `14d2711` with 87/87 tests and 0 warnings/errors.
 - [x] Split initial protection, BE/trailing and stop-price geometry into separate partial-class modules; same CI result.
 - [ ] Run `scripts/build-cbot.ps1` locally on the current head and perform cTrader demo acceptance for broker/storage behavior.
 
 
 ## Audit addendum — protective stop geometry
-- [x] Extract stop-side validation, minimum broker-distance conversion, tick normalization and monotonic stop selection into a pure core policy with deterministic long/short and invalid-input tests. This code change awaits CI/local validation.
+- [x] Extract stop-side validation, minimum broker-distance conversion, tick normalization and monotonic stop selection into `ProtectiveStopPolicy`; CI passed at `14d2711` with 87/87 tests, 0 warnings and 0 errors. Local build and broker acceptance pending.
+
+
+## Audit addendum — verified protective-stop policy
+- [x] Latest Windows CI at `14d2711` passed: Release build, 0 warnings/errors, 87/87 NUnit tests. Run: https://github.com/armanemp/CT-TraderBot/actions/runs/39087296809.
+- [ ] User to pull and run the current build script locally; broker-side SL acceptance/rejection and restart tests still require cTrader demo validation.

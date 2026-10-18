@@ -17,7 +17,7 @@ The platform-independent tests cover:
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 - Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
 
-Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The module-split code at commit `226d7bb` passed Windows CI with a Release build, 0 warnings/errors, and 69/69 tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
+Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The module-split code at commit `226d7bb` passed Windows CI with a Release build, 0 warnings/errors, and 69/69 tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. The latest `ProtectiveStopPolicy` at commit `14d2711` passed with 0 warnings/errors and 87/87 tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087296809. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
 
 The latest adapter patch also rejects NaN/infinity for every configurable numeric parameter, honours the configured multi-bar M5 wick fallback and fixed-pip fallback when ATR is unavailable, and reduces hot-path scans to the cBot label/current symbol (without using the pinned API's `FindById(int)` with a `long` ID). These adapter changes require CI and local compile verification; unit tests do not simulate broker position or storage behavior.
 
@@ -60,3 +60,8 @@ Entry execution, signal detection, structure, quality scoring, initial protectio
 ## Protective stop geometry tests
 
 `CTTraderBot.Core.Policies.ProtectiveStopPolicy` covers long/short loss-side checks, initial vs tightening tick rounding, broker min-distance conversion from pips/percentage, safety-tick handling, and monotonic stop selection. These tests validate pure numeric rules only; broker acceptance still requires cTrader demo tests.
+
+
+## Latest CI evidence
+
+At code commit `14d2711`, Windows CI passed the Release build with 0 warnings/errors and all 87 NUnit tests. This is pure-policy and compile evidence; no broker execution or profitability claim follows from it. A local build and cTrader demo acceptance for the current revision remain pending.
