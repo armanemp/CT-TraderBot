@@ -16,7 +16,7 @@ The platform-independent tests cover:
 - M5 fast/slow EMA and closed-price direction rules, including neutral/conflicting and non-finite values.
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 
-Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The code follow-on changes after 0f4b include malformed-lease rejection and visible warnings for stop/risk/storage problems; the latter changes are awaiting their own CI/local validation. The user must run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
+Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
 
 The build script runs the test suite after compiling the solution and checks the generated CTTraderBot.algo path. Unit tests cover pure rules only; they do not simulate broker fills, LocalStorage failure, stop rejection, multi-instance races or profitability.
 
