@@ -125,3 +125,8 @@ A new core policy isolates the stop-side predicate, broker minimum-distance calc
 ## Audit addendum — stop-price policy
 
 The pure `CTTraderBot.Core.Policies.ProtectiveStopPolicy` now covers the loss-side check, minimum broker-distance conversion, tick-size normalization and more-protective-stop selection. Its long/short boundary tests are included in the successful 87-test CI run at commit `14d2711`. Broker acceptance/rejection and live quote races remain platform-level test requirements.
+
+
+## Audit addendum — persistent source contract
+
+A PowerShell source-contract verifier compares current parameter names/types/attributes against the legacy reference and checks the chart-only TP order contract. It is wired into the local build and Windows CI to catch accidental parameter-default drift or an unreviewed broker-TP path. The new gate awaits CI/local validation.

@@ -65,3 +65,8 @@ Entry execution, signal detection, structure, quality scoring, initial protectio
 ## Latest CI evidence
 
 At code commit `14d2711`, Windows CI passed the Release build with 0 warnings/errors and all 87 NUnit tests. This is pure-policy and compile evidence; no broker execution or profitability claim follows from it. A local build and cTrader demo acceptance for the current revision remain pending.
+
+
+## Persistent source-contract gate
+
+scripts/verify-cbot-contract.ps1 compares every legacy public parameter's name, type and full Parameter attribute against the current cBot, flags duplicate/missing/changed declarations, and checks that the reviewed market-entry path keeps broker TP explicitly null. It is called from both the local build script and Windows CI. The new gate is awaiting CI/local validation.

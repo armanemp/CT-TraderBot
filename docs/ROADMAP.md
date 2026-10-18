@@ -128,3 +128,8 @@ Keep each phase small enough to review. Do not combine behavior redesign with me
 ## Audit addendum — verified protective-stop policy
 - [x] Latest Windows CI at `14d2711` passed: Release build, 0 warnings/errors, 87/87 NUnit tests. Run: https://github.com/armanemp/CT-TraderBot/actions/runs/39087296809.
 - [ ] User to pull and run the current build script locally; broker-side SL acceptance/rejection and restart tests still require cTrader demo validation.
+
+
+## Audit addendum — source contract gate
+- [x] Add scripts/verify-cbot-contract.ps1 to compare legacy/current public parameter contracts and protect the chart-only TP order contract.
+- [ ] Validate the new gate in CI and in the user's next local build.
