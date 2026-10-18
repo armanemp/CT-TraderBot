@@ -34,7 +34,7 @@ Domain/policy code must not call `Robot`, `Symbol`, `Account`, `Positions`, `Cha
 - **Position lifecycle:** own idempotent handling of opened/closed/recovered positions.
 - **Target guide:** calculate and render a visual objective only. It must never accidentally become a broker TP.
 - **Persistence:** version serialized state, validate it on load, and make failures observable.
-- **Multi-instance coordination:** document guarantee level. Device LocalStorage has no compare-and-swap transaction, so a lease built on it is not an atomic lock. Required storage refresh/read/write failures must fail closed; this reduces stale-cache decisions but cannot eliminate simultaneous-acquisition races. Demo tests with two instances remain mandatory.
+- **Multi-instance coordination:** document guarantee level. Device LocalStorage has no compare-and-swap transaction, so a lease built on it is not an atomic lock. Required storage refresh/read/write failures must fail closed; this reduces stale-cache decisions but cannot eliminate simultaneous-acquisition races. Demo tests with two instances remain mandatory. cTrader's official API documentation also marks LocalStorage Reload and Flush as unsupported no-ops in Cloud; this design is local desktop-only until a cloud-supported persistence adapter exists.
 - **UI:** parse and validate user input at the boundary; business logic must not depend on controls.
 - **Robot entry point:** wire events, sequence use-cases and translate API results. It must not contain the complete strategy.
 
