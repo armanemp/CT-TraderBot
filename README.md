@@ -70,6 +70,12 @@ The build script first runs `scripts/verify-cbot-contract.ps1` to compare public
 
 The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance. The current state/lease design is for local desktop cTrader: official cTrader documentation says LocalStorage Reload/Flush are unsupported no-ops in Cloud, without an error. Cloud deployment must remain unsupported until the persistence/ownership design is replaced.
 
+## Commission estimate fallback for XAU/GOLD
+
+Pre-trade sizing uses the broker symbol's commission metadata and account-currency conversion when those values are available. For the gold-focused profile only, if the commission estimate/conversion is unavailable, the cBot uses a conservative reserve equivalent to at least 10 pips for round-turn commission (or twice the current spread if larger) and reports that fallback in the status notice. This reserve changes position sizing—not the structure-derived stop price. If the reserve still leaves the minimum broker volume above the risk budget, the entry is skipped. A manual volume whose estimate exceeds the approved budget by no more than 5% may be reduced to a broker-valid volume step; larger overruns are not silently accepted.
+
+The 10-pip reserve is a conservative engineering fallback, not a guarantee of the broker's actual charge. Confirm it against the commission shown on a completed LiteFinance cTrader demo trade before relying on the estimates. Non-gold symbols do not use this gold-specific fallback.
+
 ## Demo/live behavior parity
 
 The cBot uses one strategy and execution code path for demo and live accounts; it does not turn strategy features on/off based on the account environment. Broker/account differences such as spread, available symbols, commission schedule, minimum volume, margin/leverage, stop distance, slippage and fill behavior can still change whether an order qualifies and how it executes. This is expected platform behavior, not a demo-only code branch.
