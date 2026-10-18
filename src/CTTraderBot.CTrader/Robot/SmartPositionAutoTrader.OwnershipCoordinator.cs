@@ -106,6 +106,7 @@ namespace cAlgo.Robots
             {
                 _sharedStorageHealthy = false;
                 Diag("Could not read shared management lease: {0}", ex.Message);
+                SetVolumeNotice("Shared manager lease could not be read. Position management is paused until storage recovers.", true);
                 return false;
             }
 
@@ -116,9 +117,19 @@ namespace cAlgo.Robots
             int priority;
             long expiryTicks;
             if (parts.Length != 3 ||
+                string.IsNullOrWhiteSpace(parts[0]) ||
                 !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out priority) ||
-                !long.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out expiryTicks))
+                !long.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out expiryTicks) ||
+                expiryTicks <= DateTime.MinValue.Ticks ||
+                expiryTicks > DateTime.MaxValue.Ticks)
+            {
+                // A non-empty but malformed key is not the same as a missing lease. Taking
+                // ownership could race the instance that wrote/partially updated this value.
+                _sharedStorageHealthy = false;
+                Diag("Shared management lease is malformed for key {0}; refusing ownership.", key);
+                SetVolumeNotice("Shared manager lease data is malformed. Position management is paused to avoid competing managers.", true);
                 return false;
+            }
 
             lease = new OwnershipLease
             {
