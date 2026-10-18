@@ -15,6 +15,11 @@ namespace CTTraderBot.Core.Policies
             double maximumRiskPercent,
             double absoluteRiskCeilingPercent)
         {
+            if (!IsFinite(minimumRiskPercent) ||
+                !IsFinite(maximumRiskPercent) ||
+                !IsFinite(absoluteRiskCeilingPercent))
+                return 0.0;
+
             double minimum = Math.Max(0.0, minimumRiskPercent);
             double maximum = Math.Max(minimum, maximumRiskPercent);
             double allowed;
@@ -36,6 +41,11 @@ namespace CTTraderBot.Core.Policies
                 allowed = Math.Min(allowed, absoluteRiskCeilingPercent);
 
             return Math.Max(0.0, allowed);
+        }
+
+        private static bool IsFinite(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
         private static double Clamp01(double value)

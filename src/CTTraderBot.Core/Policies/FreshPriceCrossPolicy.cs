@@ -1,3 +1,5 @@
+using System;
+
 namespace CTTraderBot.Core.Policies
 {
     /// <summary>
@@ -9,16 +11,19 @@ namespace CTTraderBot.Core.Policies
     {
         public static bool CrossedAbove(double previousPrice, double currentPrice, double triggerPrice)
         {
-            return previousPrice > 0.0 &&
-                   previousPrice <= triggerPrice &&
-                   currentPrice > triggerPrice;
+            return IsFinite(previousPrice) && IsFinite(currentPrice) && IsFinite(triggerPrice) &&
+                   previousPrice > 0.0 && previousPrice <= triggerPrice && currentPrice > triggerPrice;
         }
 
         public static bool CrossedBelow(double previousPrice, double currentPrice, double triggerPrice)
         {
-            return previousPrice > 0.0 &&
-                   previousPrice >= triggerPrice &&
-                   currentPrice < triggerPrice;
+            return IsFinite(previousPrice) && IsFinite(currentPrice) && IsFinite(triggerPrice) &&
+                   previousPrice > 0.0 && previousPrice >= triggerPrice && currentPrice < triggerPrice;
+        }
+
+        private static bool IsFinite(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value);
         }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace CTTraderBot.Core.Policies
 {
     /// <summary>
@@ -22,6 +24,10 @@ namespace CTTraderBot.Core.Policies
             double priorFastEma,
             double lastClosedPrice)
         {
+            if (!IsFinite(fastEma) || !IsFinite(slowEma) ||
+                !IsFinite(priorFastEma) || !IsFinite(lastClosedPrice))
+                return TrendBias.Neutral;
+
             bool bullish = fastEma > slowEma &&
                            lastClosedPrice >= slowEma &&
                            fastEma >= priorFastEma;
@@ -34,6 +40,11 @@ namespace CTTraderBot.Core.Policies
                 return TrendBias.Neutral;
 
             return bullish ? TrendBias.Bullish : TrendBias.Bearish;
+        }
+
+        private static bool IsFinite(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value);
         }
     }
 }

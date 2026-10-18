@@ -65,5 +65,29 @@ namespace CTTraderBot.Core.Tests.Policies
         {
             Assert.That(M5TrendBiasPolicy.Calculate(102.0, 100.0, 101.0, 99.0), Is.EqualTo(TrendBias.Neutral));
         }
+
+        [Test]
+        public void NonFiniteFastEma_IsNeutral()
+        {
+            Assert.That(M5TrendBiasPolicy.Calculate(double.NaN, 100.0, 101.0, 102.0), Is.EqualTo(TrendBias.Neutral));
+        }
+
+        [Test]
+        public void NonFiniteSlowEma_IsNeutral()
+        {
+            Assert.That(M5TrendBiasPolicy.Calculate(102.0, double.PositiveInfinity, 101.0, 102.0), Is.EqualTo(TrendBias.Neutral));
+        }
+
+        [Test]
+        public void NonFinitePriorEma_IsNeutral()
+        {
+            Assert.That(M5TrendBiasPolicy.Calculate(102.0, 100.0, double.NaN, 102.0), Is.EqualTo(TrendBias.Neutral));
+        }
+
+        [Test]
+        public void NonFiniteClosedPrice_IsNeutral()
+        {
+            Assert.That(M5TrendBiasPolicy.Calculate(102.0, 100.0, 101.0, double.PositiveInfinity), Is.EqualTo(TrendBias.Neutral));
+        }
     }
 }

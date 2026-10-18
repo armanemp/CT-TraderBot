@@ -107,5 +107,23 @@ namespace CTTraderBot.Core.Tests.Policies
 
             Assert.That(actual, Is.EqualTo(0.75).Within(Tolerance));
         }
+
+        [Test]
+        public void NonFiniteMinimumRiskConfiguration_FailsClosed()
+        {
+            Assert.That(AdaptiveRiskBudgetPolicy.Calculate(1.0, true, double.NaN, 1.5, 0.0), Is.EqualTo(0.0));
+        }
+
+        [Test]
+        public void NonFiniteMaximumRiskConfiguration_FailsClosed()
+        {
+            Assert.That(AdaptiveRiskBudgetPolicy.Calculate(1.0, true, 0.5, double.PositiveInfinity, 0.0), Is.EqualTo(0.0));
+        }
+
+        [Test]
+        public void NonFiniteCeilingConfiguration_FailsClosed()
+        {
+            Assert.That(AdaptiveRiskBudgetPolicy.Calculate(1.0, true, 0.5, 1.5, double.NaN), Is.EqualTo(0.0));
+        }
     }
 }

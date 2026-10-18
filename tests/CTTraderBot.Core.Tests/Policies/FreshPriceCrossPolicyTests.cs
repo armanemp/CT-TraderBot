@@ -65,5 +65,26 @@ namespace CTTraderBot.Core.Tests.Policies
         {
             Assert.That(FreshPriceCrossPolicy.CrossedBelow(0.0, 99.9, 100.0), Is.False);
         }
+
+        [Test]
+        public void NonFinitePreviousQuote_IsNeverAValidCrossing()
+        {
+            Assert.That(FreshPriceCrossPolicy.CrossedAbove(double.PositiveInfinity, 101.0, 100.0), Is.False);
+            Assert.That(FreshPriceCrossPolicy.CrossedBelow(double.PositiveInfinity, 99.0, 100.0), Is.False);
+        }
+
+        [Test]
+        public void NonFiniteCurrentQuote_IsNeverAValidCrossing()
+        {
+            Assert.That(FreshPriceCrossPolicy.CrossedAbove(99.0, double.PositiveInfinity, 100.0), Is.False);
+            Assert.That(FreshPriceCrossPolicy.CrossedBelow(101.0, double.NegativeInfinity, 100.0), Is.False);
+        }
+
+        [Test]
+        public void NonFiniteTrigger_IsNeverAValidCrossing()
+        {
+            Assert.That(FreshPriceCrossPolicy.CrossedAbove(99.0, 101.0, double.NaN), Is.False);
+            Assert.That(FreshPriceCrossPolicy.CrossedBelow(101.0, 99.0, double.PositiveInfinity), Is.False);
+        }
     }
 }
