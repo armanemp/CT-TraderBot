@@ -50,7 +50,7 @@ namespace cAlgo.Robots
             Positions.Closed += OnPositionClosed;
             CreateVolumeControlPanel();
 
-            // OnTick reacts immediately; the timer is a back-up retry path if ticks are sparse.
+            // OnTick handles fresh-price entry crossings; the timer backs up position-management retries.
             Timer.Start(TimeSpan.FromMilliseconds(RetryIntervalMilliseconds));
 
             Diag("SmartPositionAutoTrader M5 MICRO-SWING PRECISION started: {0} / {1}; lower confirmation {2}; instance {3}; priority {4}.",

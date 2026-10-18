@@ -222,11 +222,12 @@ namespace cAlgo.Robots
                     double postFillEstimatedLoss = Symbol.AmountRisked(volume, postFillRiskPips);
                     if (IsFinitePositive(postFillEstimatedLoss) && postFillEstimatedLoss > maximumAllowedLoss * 1.05)
                     {
-                        // AmountRisked is an estimate and the trade is already live. Never liquidate
-                        // solely because an estimated post-fill risk changed; keep the real broker SL.
-                        // Use the diagnostic switch to inspect exceptional slippage/broker-distance cases.
-                        Diag("Post-fill stop geometry increased estimated risk to {0:F2} {1} ({2:F2}% equity) versus planned budget {3:F2}%.",
-                            postFillEstimatedLoss, Account.Asset.Name, postFillEstimatedLoss / equity * 100.0, allowedRiskPercent);
+                        // AmountRisked is an estimate and the trade is already live. Do not liquidate
+                        // solely from an estimate, but make the over-budget condition visible regardless
+                        // of the optional diagnostic log setting.
+                        WarnThrottled(result.Position, String.Format(CultureInfo.InvariantCulture,
+                            "Post-fill SL geometry raises estimated risk to {0:F2} {1} ({2:F2}% equity), above the planned {3:F2}% budget. The broker SL remains attached; review this position.",
+                            postFillEstimatedLoss, Account.Asset.Name, postFillEstimatedLoss / equity * 100.0, allowedRiskPercent));
                     }
                 }
                 var entryState = new PositionState

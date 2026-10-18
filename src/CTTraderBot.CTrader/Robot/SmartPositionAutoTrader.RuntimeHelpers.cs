@@ -10,7 +10,10 @@ namespace cAlgo.Robots
     {
         private void Diag(string format, params object[] args)
         {
-            if (EnableDiagnosticLogging)
+            // Startup/configuration errors must remain visible even with verbose diagnostics disabled.
+            bool isError = !string.IsNullOrEmpty(format) &&
+                           format.StartsWith("ERROR:", StringComparison.Ordinal);
+            if (EnableDiagnosticLogging || isError)
                 Print(format, args);
         }
 
@@ -44,6 +47,7 @@ namespace cAlgo.Robots
             if (!_lastWarningTime.TryGetValue(position.Id, out last) || (now - last).TotalSeconds >= 10)
             {
                 Diag("[Position {0}] {1}", position.Id, message);
+                SetVolumeNotice("Position " + position.Id.ToString(CultureInfo.InvariantCulture) + ": " + message, true);
                 _lastWarningTime[position.Id] = now;
             }
         }

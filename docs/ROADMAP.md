@@ -67,7 +67,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [ ] Isolate stop-anchor calculation from broker submission.
 - [ ] Provide a genuine fixed-pip fallback when structure/ATR is unavailable, or fail safely before entry.
 - [ ] Validate broker distance, tick size, side, and quote side consistently.
-- [ ] Make SL rejection/unprotected status visible with bounded retry/backoff.
+- [x] Make SL rejection/unprotected status visible on the volume panel, throttled to avoid repeated warning floods; preserve bounded retry behavior. Newer code commit awaits CI/local validation.
 - **Exit gate:** long/short geometry tests pass and SL rejection is demonstrated on demo.
 
 ## Phase 6 — Break-even and trailing

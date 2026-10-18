@@ -168,6 +168,7 @@ namespace cAlgo.Robots
             }
 
             if (!TryParsePanelNumber(_freeMarginUsageTextBox == null ? string.Empty : _freeMarginUsageTextBox.Text, out marginUsage) ||
+                double.IsNaN(marginUsage) || double.IsInfinity(marginUsage) ||
                 marginUsage < 5.0 || marginUsage > 80.0)
             {
                 SetVolumeNotice("Invalid Auto margin usage. Enter a percentage from 5 to 80 to keep free-margin reserve.", true);
