@@ -34,6 +34,10 @@ try {
     dotnet build $solution --configuration Release --no-restore
     if ($LASTEXITCODE -ne 0) { throw "dotnet build failed with exit code $LASTEXITCODE" }
 
+    $testProject = Join-Path $repoRoot "tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj"
+    dotnet test $testProject --configuration Release --no-build --no-restore
+    if ($LASTEXITCODE -ne 0) { throw "Core unit tests failed with exit code $LASTEXITCODE" }
+
     if (Test-Path $robotEntry) {
         if (-not (Test-Path $publishedAlgo)) {
             throw @"
