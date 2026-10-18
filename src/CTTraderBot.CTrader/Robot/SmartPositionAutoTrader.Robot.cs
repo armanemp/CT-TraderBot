@@ -247,6 +247,7 @@ namespace cAlgo.Robots
         private readonly HashSet<long> _ignoredExistingPositionIds = new HashSet<long>();
         private readonly HashSet<long> _ownedPositionIds = new HashSet<long>();
         private readonly HashSet<long> _pendingEmergencyCloseIds = new HashSet<long>();
+        private readonly HashSet<long> _riskReviewRequiredPositionIds = new HashSet<long>();
         private readonly Dictionary<long, DateTime> _lastEmergencyCloseAttemptTime = new Dictionary<long, DateTime>();
         private readonly HashSet<long> _tpGuidePositionIds = new HashSet<long>();
         private DateTime _lastSharedStorageReloadUtc = DateTime.MinValue;
@@ -277,6 +278,16 @@ namespace cAlgo.Robots
         {
             public double InitialRiskDistance;
             public bool RiskDistanceEstimated;
+            // Approved loss amount captured before submission. Zero means no budget was persisted
+            // (legacy/adopted position); such positions still require a usable broker SL.
+            public double ApprovedRiskAmount;
+            public bool RiskReviewRequired;
+            // True when a persisted/approved budget cannot be trusted; never auto-clear this guard.
+            public bool RiskBudgetUnavailable;
+            // Persisted when a configured emergency close is required after price crosses the intended stop.
+            public bool EmergencyCloseRequired;
+            // Sticky manual-review latch for a crossed intended stop, even if auto-close is disabled.
+            public bool RiskReviewSticky;
             public double LastSuggestedTpPrice;
             public bool LastSuggestedTpReached;
             public double LastTrendScore;

@@ -16,6 +16,11 @@ The platform-independent tests cover:
 - M5 fast/slow EMA and closed-price direction rules, including neutral/conflicting and non-finite values.
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 - Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
+- Post-fill risk assessment returns WithinBudget, OverBudget, or Unknown; invalid/missing estimates never count as safe.
+- The cBot persists each new entry's approved loss budget in versioned v5 position state while still reading v2/v3/v4 and legacy 4-/5-field formats; missing, malformed or unreadable state remains locked for a managed position. Versioned state decoding/identity checks and sticky-flag round trips are unit-tested by the platform-independent codec.
+- If a structural stop is crossed while automatic emergency close is disabled, a sticky manual-review lock survives restart; the bot does not recalculate/widen the initial stop or start new entries until that position is closed.
+- When the configured emergency-close path is triggered by a crossed intended stop, its sticky request is saved and retried after restart until closure is confirmed.
+- After fill, the risk estimate includes adverse entry-to-SL distance, the configured slippage reserve, and a round-turn commission estimate when available. If the SL is unusable, the estimate is unknown, or estimated downside risk is more than 5% above the approved budget, a risk-review flag is persisted and new entries are paused. The bot keeps the existing broker SL and does not force-close solely from an estimate.
 
 Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The module-split code at commit `226d7bb` passed Windows CI with a Release build, 0 warnings/errors, and 69/69 tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087069153. The latest `ProtectiveStopPolicy` at commit `14d2711` passed with 0 warnings/errors and 87/87 tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39087296809. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
 
@@ -30,10 +35,15 @@ The build script runs the test suite after compiling the solution and checks the
 - Minimum/maximum volume, invalid steps, insufficient free margin and free-margin changes during execution.
 - Strict M5 alignment on/off and opposing strong/weak M5 context.
 - Fresh intrabar crossing, price already beyond an old level on startup, spread spikes and duplicate callbacks.
-- Broker rejects SL; retry remains bounded and warning remains visible.
+- Broker rejects SL; retry remains bounded and warning remains visible; no fresh entries occur while protection remains unconfirmed.
+- Post-fill absolute structural SL widens risk: flag persists across restart, new entries remain paused, and the guard clears only when an updated downside estimate is within 105% of the approved budget or the position closes.
+- If market price crosses the intended structural stop and an emergency close is pending/rejected, entry lock remains active on every management retry until closure is confirmed; the risk-review flag is persisted before attempting the close.
+- Restart with an already-persisted risk-review flag must show the warning immediately, not only after a state transition.
+- Cross intended SL with automatic emergency close both enabled and disabled: enabled must persist/retry close; disabled must retain the sticky review lock and refrain from recalculating a replacement SL.
+- With two same-label instances, the non-owner refreshes persisted risk review state before a new entry decision; storage refresh failures fail closed. The device lease is still not an atomic lock, so concurrent races still require demo acceptance.
 - BE/trailing never loosens current protective SL.
 - Target guide reached with strong/weak momentum; no broker TP is accidentally attached.
-- Restart with valid, stale, malformed and missing state.
+- Restart with valid, stale, malformed and missing state; a missing state record for an already-managed bot position must not be silently treated as having an approved risk budget.
 - Two instances see the same position; lease reload/flush failures and expiry edges.
 - Chart input validation and shutdown cleanup.
 - Hedged versus netted account and exact-label isolation.

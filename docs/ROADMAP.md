@@ -57,7 +57,10 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate:** both-direction tests, conflict/fresh-cross/cooldown coverage, CI and local build evidence.
 
 ## Phase 4 — Risk and volume
-- [ ] Reconcile pre-trade risk with the actual fill and the post-fill absolute structural SL; define/demo-test a response when expected loss exceeds the approved budget.
+- [x] Add a pure post-fill risk assessment with a 5% tolerance and fail-closed handling for non-finite/missing estimates.
+- [x] Persist the entry's approved loss amount, risk-review state, sticky structural-stop review, and emergency-close request in versioned v5 position state while continuing to read v2/v3/v4 and legacy four-/five-field state; missing/malformed/unreadable state for a managed position holds the review lock.
+- [x] When post-fill structural SL risk exceeds the approved budget by more than tolerance, retain the valid broker SL, visibly flag the position and pause further entries until estimated downside risk returns within tolerance or the position closes. Do not tighten the stop inside structure or force-close solely from an estimate.
+- [ ] Demo-test risk overruns, missing/rejected SL, restart recovery and risk-guard release with the target broker.
 - [ ] Include commission in pre-trade estimates where the broker's commission model can be measured reliably; otherwise label its omission explicitly.
 - [ ] Separate the risk budget from broker margin calculations.
 - [ ] Validate manual volume, auto minimum/maximum volume and broker volume steps.

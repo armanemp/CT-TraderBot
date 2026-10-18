@@ -28,7 +28,10 @@ namespace cAlgo.Robots
                 : Symbol.Ask >= desiredStop;
             if (plannedLevelAlreadyCrossed)
             {
-                WarnThrottled(position, "Price crossed the intended absolute structural SL during/just after entry. The bot will not move the stop farther away to disguise the breach.");
+                FlagRiskReview(position,
+                    "price crossed the intended absolute structural stop during/just after entry; the stop will not be widened to disguise the breach",
+                    CloseIfInitialStopAlreadyCrossed,
+                    true);
                 if (CloseIfInitialStopAlreadyCrossed)
                 {
                     _pendingEmergencyCloseIds.Add(position.Id);
@@ -201,6 +204,11 @@ namespace cAlgo.Robots
 
             if (plannedStopAlreadyBreached)
             {
+                FlagRiskReview(position,
+                    "price crossed the intended initial stop before broker protection could be confirmed; the stop will not be widened",
+                    CloseIfInitialStopAlreadyCrossed,
+                    true);
+
                 if (!CloseIfInitialStopAlreadyCrossed)
                     return RetryInitialStop(position, "Price has already crossed the planned initial SL; not widening the stop. Enable emergency close or handle the position manually.");
 
@@ -238,11 +246,14 @@ namespace cAlgo.Robots
             if (!result.IsSuccessful)
                 return RetryInitialStop(position, "Broker rejected initial SL. Position can remain unprotected until accepted.");
 
-            var state = new PositionState
-            {
-                InitialRiskDistance = Math.Abs(position.EntryPrice - stopPrice),
-                RiskDistanceEstimated = false
-            };
+            PositionState state;
+            if (!_states.TryGetValue(position.Id, out state) || state == null)
+                state = new PositionState();
+
+            // Update only the measured initial-R fields. Preserve the approved-risk budget and
+            // review flag so re-protecting a position cannot accidentally clear the entry guard.
+            state.InitialRiskDistance = Math.Abs(position.EntryPrice - stopPrice);
+            state.RiskDistanceEstimated = false;
             _states[position.Id] = state;
             SaveState(position, state);
             _lastWarningTime.Remove(position.Id);

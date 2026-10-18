@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using CTTraderBot.Core.Policies;
 using cAlgo.API;
 using cAlgo.API.Indicators;
 
@@ -15,6 +16,7 @@ namespace cAlgo.Robots
                 return state;
 
             string saved = null;
+            bool riskBudgetUnavailable = false;
             try
             {
                 saved = LocalStorage.GetString(GetStateKey(position.Id), SharedScope);
@@ -23,41 +25,51 @@ namespace cAlgo.Robots
             catch (Exception ex)
             {
                 _positionStateStorageHealthy = false;
+                riskBudgetUnavailable = true;
                 WarnThrottled(position, "Could not restore saved position state; falling back to estimated R: " + ex.Message);
-                SetVolumeNotice("Position state could not be read. Any recovered R/TP guide will be marked estimated.", true);
+                SetVolumeNotice("Position state could not be read. The approved risk budget is unknown; new entries remain paused while this position is open.", true);
+            }
+
+            if (string.IsNullOrWhiteSpace(saved))
+            {
+                // This method is called only for a bot-labeled managed position. A missing key can
+                // mean that an earlier write failed or state was lost; do not silently substitute
+                // an estimated R and treat the original approved risk budget as known.
+                riskBudgetUnavailable = true;
+                WarnThrottled(position, "No persisted risk state was found for this managed position; its approved entry risk is unknown and new entries will remain paused until the position closes.");
+                SetVolumeNotice("Managed position has no persisted approved-risk state. New entries are paused until this position is closed or reconciled manually.", true);
             }
 
             if (!string.IsNullOrWhiteSpace(saved))
             {
-                var parts = saved.Split('|');
-                double storedEntry;
-                double storedRisk;
-                long storedEntryTimeTicks;
-                // Four-field state predates the estimate flag; classify it as estimated rather
-                // than falsely claiming the original stop risk was confirmed.
-                bool storedEstimated = true;
-                bool estimateFieldValid = parts.Length == 4 ||
-                    (parts.Length == 5 && bool.TryParse(parts[4], out storedEstimated));
-                if ((parts.Length == 4 || parts.Length == 5) && estimateFieldValid &&
-                    double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
-                    double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
-                    string.Equals(parts[2], position.TradeType.ToString(), StringComparison.Ordinal) &&
-                    long.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedEntryTimeTicks) &&
-                    Math.Abs(storedEntry - position.EntryPrice) <= Symbol.TickSize * 0.5 &&
-                    storedEntryTimeTicks == position.EntryTime.Ticks &&
-                    IsFinitePositive(storedRisk) &&
-                    storedRisk >= Symbol.TickSize * 0.5)
+                PositionRiskStateRecord restored;
+                if (PositionRiskStateCodec.TryDeserialize(
+                    saved,
+                    position.EntryPrice,
+                    position.TradeType.ToString(),
+                    position.EntryTime.Ticks,
+                    Symbol.TickSize,
+                    out restored))
                 {
                     state = new PositionState
                     {
-                        InitialRiskDistance = storedRisk,
-                        RiskDistanceEstimated = storedEstimated
+                        InitialRiskDistance = restored.InitialRiskDistance,
+                        RiskDistanceEstimated = restored.RiskDistanceEstimated,
+                        ApprovedRiskAmount = restored.ApprovedRiskAmount,
+                        RiskReviewRequired = restored.RiskReviewRequired,
+                        RiskBudgetUnavailable = restored.RiskBudgetUnavailable,
+                        EmergencyCloseRequired = restored.EmergencyCloseRequired,
+                        RiskReviewSticky = restored.RiskReviewSticky
                     };
                     _states[position.Id] = state;
-                    if (parts.Length == 4)
-                        SaveState(position, state); // Upgrade legacy state with the explicit estimate flag.
+                    if (restored.Version != PositionRiskStateCodec.CurrentVersion)
+                        SaveState(position, state); // Upgrade every accepted legacy/versioned record to current v5.
                     return state;
                 }
+
+                // A non-empty record that failed parsing/identity validation may have contained
+                // the approved budget or an emergency-close request; keep the entry lock closed.
+                riskBudgetUnavailable = true;
             }
 
             double risk;
@@ -87,7 +99,9 @@ namespace cAlgo.Robots
             state = new PositionState
             {
                 InitialRiskDistance = risk,
-                RiskDistanceEstimated = riskEstimated
+                RiskDistanceEstimated = riskEstimated,
+                RiskReviewRequired = riskBudgetUnavailable,
+                RiskBudgetUnavailable = riskBudgetUnavailable
             };
             _states[position.Id] = state;
             SaveState(position, state);
@@ -96,11 +110,21 @@ namespace cAlgo.Robots
 
         private void SaveState(Position position, PositionState state)
         {
-            string value = string.Format(CultureInfo.InvariantCulture, "{0:R}|{1:R}|{2}|{3}|{4}",
-                position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
-                state.RiskDistanceEstimated);
             try
             {
+                string value = PositionRiskStateCodec.Serialize(new PositionRiskStateRecord
+                {
+                    EntryPrice = position.EntryPrice,
+                    InitialRiskDistance = state.InitialRiskDistance,
+                    TradeType = position.TradeType.ToString(),
+                    EntryTimeTicks = position.EntryTime.Ticks,
+                    RiskDistanceEstimated = state.RiskDistanceEstimated,
+                    ApprovedRiskAmount = Math.Max(0.0, state.ApprovedRiskAmount),
+                    RiskReviewRequired = state.RiskReviewRequired,
+                    RiskBudgetUnavailable = state.RiskBudgetUnavailable,
+                    EmergencyCloseRequired = state.EmergencyCloseRequired,
+                    RiskReviewSticky = state.RiskReviewSticky
+                });
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);
                 LocalStorage.Flush(SharedScope);
                 _positionStateStorageHealthy = true;

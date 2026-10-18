@@ -261,36 +261,41 @@ namespace cAlgo.Robots
 
             if (result.Position != null)
             {
-                AlignFilledPositionStopToStructure(result.Position, plannedStop);
-                if (!IsPositionStillOpen(result.Position.Id) || _pendingEmergencyCloseIds.Contains(result.Position.Id))
-                    return;
-
-                bool hasValidActualStop = result.Position.StopLoss.HasValue && IsStopOnRiskSide(result.Position);
+                // Save the approved budget before attempting absolute structural alignment. If the
+                // planned level was crossed in the meantime, the emergency-close lock must survive
+                // this instance's restart and be visible to a second instance.
+                bool hasValidActualStop = HasUsableStopLoss(result.Position);
                 double actualRiskDistance = hasValidActualStop
                     ? Math.Abs(result.Position.EntryPrice - result.Position.StopLoss.Value)
                     : stopDistance;
-                if (hasValidActualStop)
-                {
-                    double postFillRiskPips = actualRiskDistance / Symbol.PipSize + Math.Max(0.0, SizingSlippageReservePips);
-                    double postFillEstimatedLoss = Symbol.AmountRisked(volume, postFillRiskPips);
-                    if (IsFinitePositive(postFillEstimatedLoss) && postFillEstimatedLoss > maximumAllowedLoss * 1.05)
-                    {
-                        // AmountRisked is an estimate and the trade is already live. Do not liquidate
-                        // solely from an estimate, but make the over-budget condition visible regardless
-                        // of the optional diagnostic log setting.
-                        WarnThrottled(result.Position, String.Format(CultureInfo.InvariantCulture,
-                            "Post-fill SL geometry raises estimated risk to {0:F2} {1} ({2:F2}% equity), above the planned {3:F2}% budget. The broker SL remains attached; review this position.",
-                            postFillEstimatedLoss, Account.Asset.Name, postFillEstimatedLoss / equity * 100.0, allowedRiskPercent));
-                    }
-                }
+
                 var entryState = new PositionState
                 {
                     InitialRiskDistance = actualRiskDistance,
                     RiskDistanceEstimated = !hasValidActualStop,
+                    ApprovedRiskAmount = maximumAllowedLoss,
+                    RiskReviewRequired = false,
                     LastSuggestedTpPrice = 0,
                     LastTpDrawBarIndex = -1
                 };
                 _states[result.Position.Id] = entryState;
+                RefreshPostFillRiskReview(result.Position, entryState, false);
+                SaveState(result.Position, entryState);
+
+                AlignFilledPositionStopToStructure(result.Position, plannedStop);
+                if (!IsPositionStillOpen(result.Position.Id) || _pendingEmergencyCloseIds.Contains(result.Position.Id))
+                    return;
+
+                hasValidActualStop = HasUsableStopLoss(result.Position);
+                actualRiskDistance = hasValidActualStop
+                    ? Math.Abs(result.Position.EntryPrice - result.Position.StopLoss.Value)
+                    : stopDistance;
+                entryState.InitialRiskDistance = actualRiskDistance;
+                entryState.RiskDistanceEstimated = !hasValidActualStop;
+
+                // Re-assess after the structural SL is confirmed. The broker-valid structural
+                // stop is never pulled inside the wick merely to satisfy the risk budget.
+                RefreshPostFillRiskReview(result.Position, entryState, false);
                 SaveState(result.Position, entryState);
             }
 

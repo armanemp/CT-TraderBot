@@ -336,6 +336,7 @@ namespace cAlgo.Robots
             _ignoredExistingPositionIds.Remove(position.Id);
             _ownedPositionIds.Remove(position.Id);
             _pendingEmergencyCloseIds.Remove(position.Id);
+            _riskReviewRequiredPositionIds.Remove(position.Id);
             _lastEmergencyCloseAttemptTime.Remove(position.Id);
             RemoveSuggestedTpGuide(position.Id);
 
