@@ -600,60 +600,26 @@ namespace cAlgo.Robots
 
         private double GetEntryTargetR(TradeType tradeType, double atr, double entryReference, double stopDistance)
         {
-            if (atr <= 0 || stopDistance <= Symbol.TickSize)
+            if (!IsFinitePositive(atr) || stopDistance <= Symbol.TickSize ||
+                !IsFinitePositive(entryReference))
                 return 0.0;
 
+            // Entry screening must not reuse the adaptive chart-guide target (which can extend
+            // to a large R multiple without a confirmed barrier). Screen using the configured
+            // base R, capped only by the nearest valid forward structural barrier.
             double baseR = Math.Max(0.5, SuggestedTakeProfitR);
-            double requestedR = baseR;
-            if (AdaptiveSuggestedTp && Bars != null && Bars.Count >= 7)
-            {
-                double signedMove = tradeType == TradeType.Buy
-                    ? Bars.Last(1).Close - Bars.Last(6).Close
-                    : Bars.Last(6).Close - Bars.Last(1).Close;
-                double directional = Clamp01(signedMove / (atr * 2.5));
-                double bodySum = 0.0;
-                double rangeSum = 0.0;
-                double alignedBody = 0.0;
-                for (int i = 1; i <= 3; i++)
-                {
-                    var candle = Bars.Last(i);
-                    double body = Math.Abs(candle.Close - candle.Open);
-                    double range = Math.Max(Symbol.TickSize, candle.High - candle.Low);
-                    bodySum += body;
-                    rangeSum += range;
-                    bool aligned = tradeType == TradeType.Buy ? candle.Close > candle.Open : candle.Close < candle.Open;
-                    if (aligned)
-                        alignedBody += body;
-                }
-                double alignedBodyRatio = rangeSum > 0 ? Clamp01(alignedBody / rangeSum) : 0.0;
-                double alignmentRatio = bodySum > 0 ? Clamp01(alignedBody / bodySum) : 0.0;
-                double strength = Clamp01(0.55 * directional + 0.25 * alignedBodyRatio + 0.20 * alignmentRatio);
-                requestedR = Math.Max(baseR, Math.Min(MaximumSuggestedTpR,
-                    baseR + strength * Math.Max(0.0, MaximumSuggestedTpR - baseR)));
-            }
-
-            double direction = tradeType == TradeType.Buy ? 1.0 : -1.0;
-            double target = entryReference + direction * stopDistance * requestedR;
             double m5Barrier = GetNearestStructuralBarrier(tradeType, entryReference, atr);
             double lowerBarrier = GetNearestLowerStructuralBarrier(tradeType, entryReference);
             double barrier = GetNearestForwardBarrier(tradeType, entryReference, m5Barrier, lowerBarrier);
-            if (barrier > 0)
-            {
-                double buffer = Math.Max(Symbol.TickSize, atr * Math.Max(0.0, SuggestedTpStructureBufferAtr));
-                double structuralCandidate = barrier - direction * buffer;
-                bool candidateInProfit = tradeType == TradeType.Buy
-                    ? structuralCandidate > entryReference + Symbol.TickSize
-                    : structuralCandidate < entryReference - Symbol.TickSize;
-                bool barrierAhead = tradeType == TradeType.Buy
-                    ? barrier > entryReference + Symbol.TickSize
-                    : barrier < entryReference - Symbol.TickSize;
-                bool barrierLimitsTarget = tradeType == TradeType.Buy ? barrier < target : barrier > target;
-                if (barrierAhead && barrierLimitsTarget)
-                    target = candidateInProfit ? structuralCandidate : barrier;
-            }
+            double buffer = Math.Max(Symbol.TickSize, atr * Math.Max(0.0, SuggestedTpStructureBufferAtr));
 
-            double realisticR = Math.Abs(target - entryReference) / stopDistance;
-            return IsFinitePositive(realisticR) ? realisticR : 0.0;
+            return EntryRewardRiskPolicy.Calculate(
+                tradeType == TradeType.Buy,
+                entryReference,
+                stopDistance,
+                baseR,
+                barrier,
+                buffer);
         }
 
         private double GetNearestLowerStructuralBarrier(TradeType tradeType, double currentPrice)

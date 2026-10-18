@@ -15,6 +15,7 @@ The platform-independent tests cover:
 - Fresh quote crossings in each direction, strict trigger edges, stale levels, missing prior quotes and non-finite quote/trigger inputs.
 - M5 fast/slow EMA and closed-price direction rules, including neutral/conflicting and non-finite values.
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
+- Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
 
 Commit 6516411 passed 34/34 tests locally and in Windows CI. The audit adds 21 test cases. Code commit 0f4b29a passed Windows CI with 55/55 tests and 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The follow-on code at commit 5004b86, including malformed-lease rejection, panel-visible safety warnings, and NaN margin-usage validation, also passed all Windows CI steps: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978. The user must still run the current revision locally. cTrader storage/restart and broker-execution paths remain outside the core unit-test scope.
 

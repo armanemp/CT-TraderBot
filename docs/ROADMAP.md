@@ -47,6 +47,8 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Extract M5 EMA/closed-price direction into a pure policy; verified locally/CI at commit 6516411.
 - [x] Fix the strict M5 alignment contract: when enabled, neutral or conflicting M5 bias must reject the signal; a lower-timeframe structure break may only override the soft-context path.
 - [x] Add deterministic policy tests for strict matching, opposite direction, neutral bias, and soft mode.
+- [x] Separate entry reward/risk screening from the adaptive chart-only TP guide; screening now uses the configured base R and caps it at a confirmed forward structural barrier rather than borrowing an aspirational guide extension.
+- [ ] Verify the screening-policy extraction with latest CI and local tests.
 - [x] Windows CI at code commit 0f4b29a passed the complete 55-test suite with 0 build warnings/errors: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020.
 - [x] Follow-on code commit 5004b86 also passed all Windows CI steps, including build and unit tests: https://github.com/armanemp/CT-TraderBot/actions/runs/39085481978.
 - [ ] User to run the current repository revision locally; broker storage, restart and position-management acceptance still require cTrader demo tests.
