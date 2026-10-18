@@ -69,6 +69,187 @@ namespace cAlgo.Robots
             return Symbol.NormalizeVolumeInUnits(low, RoundingMode.Down);
         }
 
+        private double GetMaximumVolumeWithinRiskBudget(
+            TradeType tradeType,
+            double maximumUnits,
+            double maximumAllowedLoss,
+            double stopAndSlippagePips,
+            double entryPrice)
+        {
+            if (!IsFinitePositive(maximumUnits) || !IsFinitePositive(maximumAllowedLoss) ||
+                !IsFinitePositive(stopAndSlippagePips) || !IsFinitePositive(entryPrice))
+                return 0.0;
+
+            maximumUnits = Symbol.NormalizeVolumeInUnits(
+                Math.Min(maximumUnits, Symbol.VolumeInUnitsMax), RoundingMode.Down);
+            double minimumUnits = Symbol.VolumeInUnitsMin;
+            if (maximumUnits < minimumUnits)
+                return 0.0;
+
+            double minimumRisk = EstimateTotalEntryLoss(minimumUnits, stopAndSlippagePips, entryPrice);
+            if (!IsFinitePositive(minimumRisk) || minimumRisk > maximumAllowedLoss)
+                return 0.0;
+
+            double maximumRisk = EstimateTotalEntryLoss(maximumUnits, stopAndSlippagePips, entryPrice);
+            if (IsFinitePositive(maximumRisk) && maximumRisk <= maximumAllowedLoss)
+                return maximumUnits;
+
+            // Solve for the largest broker-valid volume whose stop + slippage + round-turn
+            // commission estimate fits the approved loss budget. Binary search handles volume
+            // steps and the broker's minimum-commission floor without assuming linear costs.
+            double low = minimumUnits;
+            double high = maximumUnits;
+            for (int i = 0; i < 48; i++)
+            {
+                double middle = Symbol.NormalizeVolumeInUnits((low + high) * 0.5, RoundingMode.Down);
+                if (middle <= low || middle >= high)
+                    break;
+
+                double estimatedLoss = EstimateTotalEntryLoss(middle, stopAndSlippagePips, entryPrice);
+                if (!IsFinitePositive(estimatedLoss))
+                    return 0.0;
+
+                if (estimatedLoss <= maximumAllowedLoss)
+                    low = middle;
+                else
+                    high = middle;
+            }
+
+            return Symbol.NormalizeVolumeInUnits(low, RoundingMode.Down);
+        }
+
+        private double EstimateTotalEntryLoss(
+            double volumeInUnits,
+            double stopAndSlippagePips,
+            double entryPrice)
+        {
+            if (!IsFinitePositive(volumeInUnits) || !IsFinitePositive(stopAndSlippagePips) ||
+                !IsFinitePositive(entryPrice))
+                return double.NaN;
+
+            double stopAndSlippageLoss = Symbol.AmountRisked(volumeInUnits, stopAndSlippagePips);
+            if (!IsFinitePositive(stopAndSlippageLoss))
+                return double.NaN;
+
+            double roundTurnCommission = EstimateRoundTurnCommissionCash(volumeInUnits, entryPrice);
+            return RoundTurnCommissionPolicy.AddRoundTurnCommissionToLoss(
+                stopAndSlippageLoss, roundTurnCommission);
+        }
+
+        private double EstimateRoundTurnCommissionCash(double volumeInUnits, double entryPrice)
+        {
+            if (!IsFinitePositive(volumeInUnits) || !IsFinitePositive(entryPrice) ||
+                Symbol == null || Symbol.QuoteAsset == null || Account == null || Account.Asset == null ||
+                !IsFiniteNonNegative(Symbol.Commission) || !IsFiniteNonNegative(Symbol.MinCommission))
+                return double.NaN;
+
+            double lots = Symbol.VolumeInUnitsToQuantity(volumeInUnits);
+            double tradedNotionalInQuote = volumeInUnits * entryPrice;
+            if (!IsFinitePositive(lots) || !IsFinitePositive(tradedNotionalInQuote))
+                return double.NaN;
+
+            double oneWayCommission = 0.0;
+            string commissionAsset = Account.Asset.Name;
+            if (Symbol.Commission > 0.0)
+            {
+                switch (Symbol.CommissionType)
+                {
+                    case SymbolCommissionType.UsdPerMillionUsdVolume:
+                        double tradedNotionalInUsd = ConvertAssetAmount(
+                            tradedNotionalInQuote, Symbol.QuoteAsset.Name, "USD");
+                        if (!IsFinitePositive(tradedNotionalInUsd))
+                            return double.NaN;
+                        oneWayCommission = Symbol.Commission * tradedNotionalInUsd / 1000000.0;
+                        commissionAsset = "USD";
+                        break;
+
+                    case SymbolCommissionType.UsdPerOneLot:
+                        oneWayCommission = Symbol.Commission * lots;
+                        commissionAsset = "USD";
+                        break;
+
+                    case SymbolCommissionType.PercentageOfTradingVolume:
+                        oneWayCommission = tradedNotionalInQuote * Symbol.Commission / 100.0;
+                        commissionAsset = Symbol.QuoteAsset.Name;
+                        break;
+
+                    case SymbolCommissionType.QuoteCurrencyPerOneLot:
+                        oneWayCommission = Symbol.Commission * lots;
+                        commissionAsset = Symbol.QuoteAsset.Name;
+                        break;
+
+                    default:
+                        return double.NaN;
+                }
+            }
+
+            if (!IsFiniteNonNegative(oneWayCommission))
+                return double.NaN;
+
+            double commissionInAccountAsset = ConvertAssetAmount(
+                oneWayCommission, commissionAsset, Account.Asset.Name);
+            if (!IsFiniteNonNegative(commissionInAccountAsset))
+                return double.NaN;
+
+            double minimumOneWayInAccountAsset = 0.0;
+            if (Symbol.MinCommission > 0.0)
+            {
+                string minimumCommissionAsset;
+                switch (Symbol.MinCommissionType)
+                {
+                    case SymbolMinCommissionType.Asset:
+                        if (Symbol.MinCommissionAsset == null)
+                            return double.NaN;
+                        minimumCommissionAsset = Symbol.MinCommissionAsset.Name;
+                        break;
+
+                    case SymbolMinCommissionType.QuoteAsset:
+                        minimumCommissionAsset = Symbol.QuoteAsset.Name;
+                        break;
+
+                    default:
+                        return double.NaN;
+                }
+
+                minimumOneWayInAccountAsset = ConvertAssetAmount(
+                    Symbol.MinCommission, minimumCommissionAsset, Account.Asset.Name);
+                if (!IsFiniteNonNegative(minimumOneWayInAccountAsset))
+                    return double.NaN;
+            }
+
+            return RoundTurnCommissionPolicy.CalculateRoundTurnCash(
+                commissionInAccountAsset, minimumOneWayInAccountAsset);
+        }
+
+        private double ConvertAssetAmount(double amount, string sourceAssetName, string targetAssetName)
+        {
+            if (!IsFiniteNonNegative(amount) ||
+                string.IsNullOrWhiteSpace(sourceAssetName) ||
+                string.IsNullOrWhiteSpace(targetAssetName))
+                return double.NaN;
+
+            if (amount == 0.0 ||
+                string.Equals(sourceAssetName, targetAssetName, StringComparison.OrdinalIgnoreCase))
+                return amount;
+
+            try
+            {
+                double converted = AssetConverter.Convert(amount, sourceAssetName, targetAssetName);
+                return IsFiniteNonNegative(converted) ? converted : double.NaN;
+            }
+            catch (Exception ex)
+            {
+                Diag("Could not convert estimated commission from {0} to {1}: {2}",
+                    sourceAssetName, targetAssetName, ex.Message);
+                return double.NaN;
+            }
+        }
+
+        private static bool IsFiniteNonNegative(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0.0;
+        }
+
         private double GetAdaptiveAllowedRiskPercent(double qualityScore)
         {
             return AdaptiveRiskBudgetPolicy.Calculate(
