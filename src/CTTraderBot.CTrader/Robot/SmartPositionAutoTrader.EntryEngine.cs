@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using CTTraderBot.Core.Policies;
 using cAlgo.API;
 using cAlgo.API.Indicators;
 
@@ -378,8 +379,8 @@ namespace cAlgo.Robots
             // when the cBot started. This prevents stale-level entry on the first tick after attach.
             double buyTrigger = swingHigh + triggerBuffer;
             double sellTrigger = swingLow - triggerBuffer;
-            bool buyBreak = _lastTickAsk > 0 && _lastTickAsk <= buyTrigger && Symbol.Ask > buyTrigger;
-            bool sellBreak = _lastTickBid > 0 && _lastTickBid >= sellTrigger && Symbol.Bid < sellTrigger;
+            bool buyBreak = FreshPriceCrossPolicy.CrossedAbove(_lastTickAsk, Symbol.Ask, buyTrigger);
+            bool sellBreak = FreshPriceCrossPolicy.CrossedBelow(_lastTickBid, Symbol.Bid, sellTrigger);
             if (buyBreak == sellBreak)
                 return null;
             return buyBreak ? TradeType.Buy : TradeType.Sell;

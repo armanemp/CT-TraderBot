@@ -38,10 +38,12 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Keep the cBot as an adapter: pass existing parameter values to the policy and use its result; do not change the calculation formula.
 - [x] Add a .NET 6 NUnit test project and boundary tests for score clamping, squared quality curve, adaptive-disabled behavior, maximum/minimum boundaries and hard ceiling.
 - [x] Add the test project to the solution and make both the Windows build workflow and `scripts/build-cbot.ps1` run the tests.
-- [ ] Confirm the new solution, unit tests and cBot artifact all pass together in one latest CI run and in the user's next local pull.
+- [x] Local validation recorded 2026-10-18: `scripts/build-cbot.ps1` completed with 0 warnings/errors, `CTTraderBot.algo` was published to `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo`, and NUnit passed 14/14 tests at commit `8962d87`.
+- [ ] Confirm the same combined state in a successful latest CI run.
 - **Scope:** only the scalar risk-budget policy is covered. This is not yet a complete risk/sizing test suite.
 
 ## Phase 3 — Entry policy isolation
+- [x] Extract the fresh above/below quote-cross predicate into `FreshPriceCrossPolicy` without changing entry criteria; cover equality edges, stale crossings and missing previous quotes with deterministic tests.
 - [ ] Separate M5 trend context, closed-bar setup and intrabar crossing policies.
 - [ ] Make strict M5 alignment a true hard filter when enabled; retain soft-filter behavior only when explicitly selected.
 - [ ] Evaluate the actual live breakout event, not only the previous closed candle.

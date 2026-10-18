@@ -10,7 +10,7 @@
 
 ## Implemented unit tests
 
-The first extracted policy is `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`. The current test suite covers the squared quality curve, zero/one boundaries, below/above-range scores, disabled adaptive mode, a positive hard ceiling, a disabled ceiling, invalid bound ordering and non-finite quality input.
+The first extracted policy is `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`. The current test suite covers the squared quality curve, zero/one boundaries, below/above-range scores, disabled adaptive mode, a positive hard ceiling, a disabled ceiling, invalid bound ordering and non-finite quality input. `CTTraderBot.Core.Policies.FreshPriceCrossPolicy` additionally tests fresh above/below quote crossings, strict current-quote boundaries, a previous quote exactly at the trigger, stale crossings where price was already beyond the level, and absent/non-positive previous quotes.
 
 Run locally:
 
