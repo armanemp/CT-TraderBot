@@ -181,7 +181,7 @@ def split_source(source: str, class_name: str) -> tuple[str, dict[str, str], dic
     if not methods:
         raise ValueError("No methods found; source differs from the reviewed baseline")
     names = Counter(str(method["name"]) for method in methods)
-    expected_counts = Counter(GROUPS)
+    expected_counts = Counter(GROUPS.keys())
     # This method is intentionally overloaded: both signatures must be retained.
     expected_counts["GetNearestStructuralBarrier"] = 2
     all_names = sorted(set(names) | set(expected_counts))
