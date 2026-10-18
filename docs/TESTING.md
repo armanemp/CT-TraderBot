@@ -1,5 +1,11 @@
 # Validation and testing
 
+## Environment parity and execution assumptions
+
+The strategy has no account-environment branch that disables features on demo or changes strategy logic on live. It uses the same code path and current parameter values in both environments. The broker/account still supplies different commission schedules, conversion rates, symbol constraints, spread, margin/leverage, fills and slippage; these are inputs to the same logic, not an environment toggle.
+
+Pre-trade commission calculations are estimates derived from the symbol's commission type and minimum fee, converted to the account asset when possible. They must be compared with actual charged commission on demo for each target broker/account. Unknown conversions fail closed for a new order rather than pretending costs are zero. Post-fill risk remains an estimate; it is not a guarantee of maximum realized loss.
+
 ## Test layers
 
 1. **Static/source checks:** duplicate-member detection, public parameter/default diffs, no accidental TP submission, no unreviewed debug behavior.
