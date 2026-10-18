@@ -22,7 +22,7 @@ src/
   CTTraderBot.Core/          Platform-independent policies and domain models
   CTTraderBot.CTrader/       cTrader Robot entry point and platform adapters
 tests/
-  README.md                  Test strategy and acceptance scenarios
+  CTTraderBot.Core.Tests/    NUnit tests for platform-independent policies
 docs/
   ARCHITECTURE.md
   ROADMAP.md
