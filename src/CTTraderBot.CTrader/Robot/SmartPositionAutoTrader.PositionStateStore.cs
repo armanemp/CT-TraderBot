@@ -18,9 +18,11 @@ namespace cAlgo.Robots
             try
             {
                 saved = LocalStorage.GetString(GetStateKey(position.Id), SharedScope);
+                _positionStateStorageHealthy = true;
             }
             catch (Exception ex)
             {
+                _positionStateStorageHealthy = false;
                 WarnThrottled(position, "Could not restore saved position state; falling back to estimated R: " + ex.Message);
                 SetVolumeNotice("Position state could not be read. Any recovered R/TP guide will be marked estimated.", true);
             }
@@ -101,9 +103,11 @@ namespace cAlgo.Robots
             {
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);
                 LocalStorage.Flush(SharedScope);
+                _positionStateStorageHealthy = true;
             }
             catch (Exception ex)
             {
+                _positionStateStorageHealthy = false;
                 WarnThrottled(position, "Position state could not be persisted; current-session management continues, but restart recovery may be estimated: " + ex.Message);
                 SetVolumeNotice("Position state could not be saved. Restart recovery may use an estimated initial risk.", true);
             }

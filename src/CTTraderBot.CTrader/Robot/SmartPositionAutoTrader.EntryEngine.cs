@@ -11,9 +11,21 @@ namespace cAlgo.Robots
     {
         private void TryOpenHybridPosition(bool allowIntrabarBreakout)
         {
-            if (!EnableAutomaticEntries || Bars == null || _lowerBars == null ||
+            if (!EnableAutomaticEntries)
+            {
+                ReportEntryBlocked("automatic entries are disabled in the cBot parameters");
+                return;
+            }
+
+            if (Bars == null || _lowerBars == null ||
                 Bars.Count < Math.Max(EntrySlowEmaPeriod + 3, 10) ||
                 _lowerBars.Count < Math.Max(EntrySlowEmaPeriod + 3, 10))
+            {
+                ReportEntryBlocked("waiting for sufficient M5 and lower-timeframe history");
+                return;
+            }
+
+            if (!CanStartNewEntry())
                 return;
 
             DateTime activeLowerBarTime = _lowerBars.LastBar.OpenTime;
@@ -22,44 +34,68 @@ namespace cAlgo.Robots
 
             // Cooldown is expressed in LOWER-timeframe bars, not M5 bars.
             if (EntryCooldownBars > 0 && _lowerBars.Count - _lastEntryBarIndex < EntryCooldownBars)
+            {
+                ReportEntryBlocked("lower-timeframe entry cooldown is active");
                 return;
+            }
 
             int openCount = Positions.FindAll(AutoTradeLabel, SymbolName).Length;
             if (openCount >= MaximumOpenPositions)
+            {
+                ReportEntryBlocked("maximum number of managed positions is already open");
                 return;
+            }
 
             double spreadPips = (Symbol.Ask - Symbol.Bid) / Symbol.PipSize;
             if (MaximumSpreadPips > 0 && spreadPips > MaximumSpreadPips)
+            {
+                ReportEntryBlocked("current spread exceeds the configured pip limit");
                 return;
+            }
 
             TradeType? signal = GetHybridEntrySignal(allowIntrabarBreakout && UseIntrabarMicroSwingBreakout);
             if (!signal.HasValue)
+            {
+                ReportEntryBlocked("no valid closed-bar setup or fresh micro-swing crossing at this tick");
                 return;
+            }
 
             // Run remaining checks before consuming this lower-TF candle. If a closed-bar pattern
             // fails sizing/quality, a later fresh micro-swing cross in the same candle may still qualify.
             double atr = GetAtrValue();
             double lowerAtr = GetLowerAtrValue();
             if (atr <= 0 || lowerAtr <= 0)
+            {
+                ReportEntryBlocked("waiting for valid M5 and lower-timeframe ATR values");
                 return;
+            }
 
             double spread = Math.Max(0, Symbol.Ask - Symbol.Bid);
             double spreadAtrRatio = atr > 0 ? spread / atr : double.MaxValue;
             if (MaximumSpreadToAtrRatio > 0 && spreadAtrRatio > MaximumSpreadToAtrRatio)
+            {
+                ReportEntryBlocked("spread is too large relative to M5 ATR");
                 return;
+            }
 
             double trendStrengthBeforeEntry = GetM5DirectionalStrengthScore(signal.Value, atr);
             // This is a soft quality check. A confirmed lower-TF structure break can override it,
             // so an early reversal is not rejected only because M5 has not turned yet.
             bool confirmedLowerShift = IsConfirmedLowerStructureBreak(signal.Value);
             if (trendStrengthBeforeEntry < MinimumM5TrendStrength && !confirmedLowerShift)
+            {
+                ReportEntryBlocked("M5 directional strength is below threshold and no confirmed lower-timeframe structure shift exists");
                 return;
+            }
 
             double entryReference = signal.Value == TradeType.Buy ? Symbol.Ask : Symbol.Bid;
             double fastEmaReference = _entryFastEma.Result.Last(1);
             double entryExtension = Math.Abs(entryReference - fastEmaReference) / atr;
             if (MaximumEntryExtensionAtr > 0 && entryExtension > MaximumEntryExtensionAtr)
+            {
+                ReportEntryBlocked("entry is too extended from the M5 fast EMA");
                 return;
+            }
 
             // The first stop anchor is LOWER-timeframe market structure, not a wide M5 candle range.
             double buffer = Math.Max(2 * Symbol.TickSize,
@@ -67,7 +103,10 @@ namespace cAlgo.Robots
             int lookback = Math.Max(3, Math.Min(EntryStructureLookbackBars, _lowerBars.Count - 2));
             double structuralExtreme = GetLowerStructuralStopAnchor(signal.Value, lookback);
             if (!IsFinitePositive(structuralExtreme))
+            {
+                ReportEntryBlocked("no valid lower-timeframe structural stop anchor was found");
                 return;
+            }
 
             double plannedStop = signal.Value == TradeType.Buy ? structuralExtreme - buffer : structuralExtreme + buffer;
             bool correctSide = signal.Value == TradeType.Buy
@@ -84,28 +123,43 @@ namespace cAlgo.Robots
 
             double stopDistance = Math.Abs(entryReference - plannedStop);
             if (stopDistance <= Symbol.TickSize || stopDistance > lowerAtr * MaximumEntryRiskAtr)
+            {
+                ReportEntryBlocked("planned structural stop distance is invalid or exceeds the lower-TF ATR limit");
                 return;
+            }
 
             double stopPips = stopDistance / Symbol.PipSize;
             double targetR = GetEntryTargetR(signal.Value, atr, entryReference, stopDistance); // visual guide only
             if (targetR < MinimumOpportunityRewardR)
+            {
+                ReportEntryBlocked("forward structural room is below the minimum estimated reward/risk requirement");
                 return;
+            }
 
             double setupQuality = GetOpportunityQualityScore(signal.Value, atr, targetR);
             // A lower-TF structural break can create an excellent early entry even before M5 strength peaks.
             if (setupQuality < MinimumEntryQualityScore)
+            {
+                ReportEntryBlocked("composite setup quality is below the configured threshold");
                 return;
+            }
 
             double allowedRiskPercent = GetAdaptiveAllowedRiskPercent(setupQuality);
             double equity = Account.Equity;
             if (!IsFinitePositive(equity) || allowedRiskPercent <= 0)
+            {
+                ReportEntryBlocked("equity or calculated risk budget is invalid", true);
                 return;
+            }
 
             // Risk budget is recalculated from current equity on every potential entry.
             double maximumAllowedLoss = equity * allowedRiskPercent / 100.0;
             double riskSizingPips = stopPips + Math.Max(0.0, SizingSlippageReservePips);
             if (!IsFinitePositive(maximumAllowedLoss) || !IsFinitePositive(riskSizingPips))
+            {
+                ReportEntryBlocked("risk budget or stop-loss pip estimate is invalid", true);
                 return;
+            }
 
             double volume;
             double freeMarginNow = Math.Max(0.0, Account.FreeMargin);
@@ -180,6 +234,9 @@ namespace cAlgo.Robots
                 return;
             }
 
+            ReportEntryStatus(String.Format(CultureInfo.InvariantCulture,
+                "qualified: {0:F2} lots; estimated risk {1:F2} {2}",
+                Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name));
             SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
                 "Ready: {0:F2} lots | estimated SL risk {1:F2} {2} | required margin {3:F2}.",
                 Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name, requiredMargin), false);
@@ -191,11 +248,13 @@ namespace cAlgo.Robots
             var result = ExecuteMarketOrder(signal.Value, SymbolName, volume, AutoTradeLabel, stopPips, null, comment);
             if (!result.IsSuccessful)
             {
+                ReportEntryStatus("broker rejected the order: " + result.Error.ToString(), true);
                 SetVolumeNotice("Broker rejected the order: " + result.Error.ToString(), true);
                 return;
             }
 
             _lastEntryBarIndex = _lowerBars.Count;
+            ReportEntryStatus("market order accepted; checking attached initial SL");
             SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
                 "Opened {0:F2} lots. Initial SL is attached; TP remains guide-only.",
                 Symbol.VolumeInUnitsToQuantity(volume)), false);

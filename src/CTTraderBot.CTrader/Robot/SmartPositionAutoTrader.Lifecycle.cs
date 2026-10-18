@@ -347,6 +347,8 @@ namespace cAlgo.Robots
             }
             catch (Exception ex)
             {
+                _sharedStorageHealthy = false;
+                _positionStateStorageHealthy = false;
                 Diag("Warning: position closed, but saved state/lease cleanup failed for position {0}: {1}", position.Id, ex.Message);
                 SetVolumeNotice("Position closed, but saved state cleanup failed. A stale lease will expire; review diagnostics.", true);
             }

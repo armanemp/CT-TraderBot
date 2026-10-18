@@ -264,6 +264,8 @@ namespace cAlgo.Robots
         private TextBlock _volumeModeStatusText;
         private TextBlock _volumeAccountStatusText;
         private TextBlock _volumeNoticeText;
+        private TextBlock _entryStatusText;
+        private bool _positionStateStorageHealthy = true;
 
         private const LocalStorageScope SharedScope = LocalStorageScope.Device;
 

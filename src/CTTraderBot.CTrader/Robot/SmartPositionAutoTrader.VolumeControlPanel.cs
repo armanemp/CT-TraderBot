@@ -125,6 +125,13 @@ namespace cAlgo.Robots
                 ForegroundColor = Color.FromHex("#CAD2DE"),
                 Margin = new Thickness(4)
             };
+            _entryStatusText = new TextBlock
+            {
+                Text = "Entry: waiting for a valid signal.",
+                FontSize = 10,
+                ForegroundColor = Color.FromHex("#B8C2D0"),
+                Margin = new Thickness(4)
+            };
             _volumeNoticeText = new TextBlock
             {
                 Text = "Ready. TP remains a chart-only guide.",
@@ -150,6 +157,7 @@ namespace cAlgo.Robots
             _volumePanel.AddChild(applyButton);
             _volumePanel.AddChild(_volumeModeStatusText);
             _volumePanel.AddChild(_volumeAccountStatusText);
+            _volumePanel.AddChild(_entryStatusText);
             _volumePanel.AddChild(_volumeNoticeText);
             Chart.AddControl(_volumePanel);
             UpdateVolumeControlPanelStatus();
