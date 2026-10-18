@@ -265,6 +265,13 @@ namespace cAlgo.Robots
             if (!lowerSignal.HasValue)
                 return null;
 
+            TrendBias signalBias = lowerSignal.Value == TradeType.Buy ? TrendBias.Bullish : TrendBias.Bearish;
+            TrendBias currentM5Bias = m5Bias.HasValue
+                ? (m5Bias.Value == TradeType.Buy ? TrendBias.Bullish : TrendBias.Bearish)
+                : TrendBias.Neutral;
+            if (!M5TrendAlignmentPolicy.Allows(currentM5Bias, signalBias, RequireM5TrendAlignment))
+                return null;
+
             // Keep strong M5 trends as the dominant context, but allow lower-TF structure shifts
             // against a weak/transitioning M5 bias so the cBot does not become excessively late.
             if (m5Bias.HasValue && lowerSignal.Value != m5Bias.Value)
