@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: cbot-baseline-split-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   split-and-verify:
