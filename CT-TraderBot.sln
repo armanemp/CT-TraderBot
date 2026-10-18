@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CTTraderBot.Core", "src\CTT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CTTraderBot.CTrader", "src\CTTraderBot.CTrader\CTTraderBot.CTrader.csproj", "{C63C7742-2F21-4DFE-8E8C-1E6B4F95B0C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CTTraderBot.Core.Tests", "tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj", "{0F3AAB1B-4D2A-4E56-A771-09802F9BC25D}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -20,5 +22,9 @@ Global
         {C63C7742-2F21-4DFE-8E8C-1E6B4F95B0C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {C63C7742-2F21-4DFE-8E8C-1E6B4F95B0C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {C63C7742-2F21-4DFE-8E8C-1E6B4F95B0C9}.Release|Any CPU.Build.0 = Release|Any CPU
+        {0F3AAB1B-4D2A-4E56-A771-09802F9BC25D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {0F3AAB1B-4D2A-4E56-A771-09802F9BC25D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {0F3AAB1B-4D2A-4E56-A771-09802F9BC25D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {0F3AAB1B-4D2A-4E56-A771-09802F9BC25D}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
 EndGlobal
