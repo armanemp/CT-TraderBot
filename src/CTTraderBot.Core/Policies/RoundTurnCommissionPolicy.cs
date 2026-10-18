@@ -70,6 +70,18 @@ namespace CTTraderBot.Core.Policies
             return IsFiniteNonNegative(roundTurn) ? roundTurn : double.NaN;
         }
 
+        public static double ResolveRoundTurnCommissionCash(
+            double estimatedRoundTurnCommission,
+            double conservativeFallbackReserve)
+        {
+            if (IsFiniteNonNegative(estimatedRoundTurnCommission))
+                return estimatedRoundTurnCommission;
+
+            return IsFiniteNonNegative(conservativeFallbackReserve)
+                ? conservativeFallbackReserve
+                : double.NaN;
+        }
+
         public static double AddRoundTurnCommissionToLoss(
             double stopAndSlippageLossAmount,
             double roundTurnCommissionAmount)
