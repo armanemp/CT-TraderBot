@@ -6,25 +6,30 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 **Status: In progress**
 - [x] Initialize repository conventions, architecture, and migration rules.
 - [x] Register a reference copy of the user-pasted cBot in `legacy/reference/SmartPositionAutoTrader_M5_MicroSwingPrecision_HedgedVolume.cs`.
-- [x] Add a pinned cTrader Automate project, solution, Windows build script, and CI workflow.
+- [x] Add a pinned `cTrader.Automate 1.0.21` project, solution, Windows build script, artifact naming override, and CI workflows.
+- [x] Run the strict splitter and build the generated cBot successfully on a Windows GitHub Actions runner.
 - [ ] Compare the reference copy against the user's original local `.cs` file and record SHA-256; byte-for-byte identity has not been independently verified.
-- [ ] Record the user's installed cTrader/API version and the first real cBot compiler diagnostics.
-- [ ] Validate the automated partial-class split and compile it against the pinned Automate package.
+- [ ] Record the user's installed cTrader/API version and local build diagnostics after the first local pull.
 
 ## Phase 1 — Reproducible baseline (no behavior changes)
-- [ ] Create the cTrader project/solution using the API target actually installed.
-- [ ] Compile the untouched baseline and record every diagnostic.
-- [ ] Inventory all public parameters/defaults and runtime events.
-- [ ] Inventory entry, volume modes, SL, BE/trailing, TP guide, persistence, ownership, and UI.
-- **Exit gate:** baseline compiles or each existing blocker is documented precisely.
+**Status: In progress**
+- [x] Create the cTrader project/solution with pinned `cTrader.Automate 1.0.21` and .NET 6 target.
+- [x] Compile the mechanically decomposed source on Windows CI: 0 warnings, 0 errors; `CTTraderBot.algo` was published and verified.
+- [x] Inventory 67 public `[Parameter]` declarations and the Robot's lifecycle/event methods from the source.
+- [x] Inventory entry, volume modes, initial SL, BE/trailing, chart-only TP guide, persistence, ownership and chart UI into responsibility files.
+- [ ] User to run the first local build with the installed cTrader version and report any environment-specific differences.
+- **Note:** the original single-file implementation was not separately compiled before decomposition; the extracted implementation was compiled with method bodies moved verbatim. Keep this distinction in validation records.
 
 ## Phase 2 — Mechanical source decomposition (behavior-preserving)
-- [ ] Split the source by responsibility; a partial-class pass may be used only as a temporary mechanical move.
-- [ ] Keep the Robot attribute/class identity and lifecycle orchestration in one entry-point file.
-- [ ] Move entry, sizing, protection, target guide, state/ownership and UI code into separate files.
-- [ ] Verify every original member exists exactly once; no missing or duplicate methods.
-- [ ] Diff public parameters/defaults, trade labels, storage keys and chart object names.
-- **Exit gate:** compile succeeds and a member inventory proves no omissions or duplicates.
+**Status: Verified — mechanical split only**
+- [x] Split the source into 11 C# files: one Robot/field/parameter entry file and 10 responsibility-based partial-class files.
+- [x] Keep the `[Robot]` attribute and class identity in `SmartPositionAutoTrader.Robot.cs`.
+- [x] Move entry, lifecycle, sizing, protection, target guide, state/ownership, runtime helpers and chart UI into separate files.
+- [x] Strict source inventory passed: all 74 expected methods/overloads mapped, with no unexpected or missing method names.
+- [x] Public parameter declarations/defaults compared against the reference: 67/67 declarations matched exactly.
+- [x] Critical trade-label, state-key, owner-key, TP-line/label prefixes and TP-guide-only marker counts matched between reference and split sources.
+- [x] Windows CI build passed with 0 warnings and 0 errors; artifact `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo` was verified. See [successful split/build run](https://github.com/armanemp/CT-TraderBot/actions/runs/39083607155) and [decomposition commit](https://github.com/armanemp/CT-TraderBot/commit/4ff8bf0).
+- **Exit gate passed for mechanical split.** This does not mean business logic has been extracted into standalone services or validated in a running cTrader instance; those remain future phases.
 
 ## Phase 3 — Entry policy isolation
 - [ ] Separate M5 trend context, closed-bar setup and intrabar crossing policies.
