@@ -27,7 +27,7 @@ For a scaffold-only compile check, rerun with -AllowScaffoldBuild.
 }
 
 if (Test-Path $robotEntry) {
-    $contractVerifier = Join-Path $repoRoot "scriptserify-cbot-contract.ps1"
+    $contractVerifier = Join-Path (Join-Path $repoRoot "scripts") "verify-cbot-contract.ps1"
     if (-not (Test-Path -LiteralPath $contractVerifier)) {
         throw "Required source-contract verifier is missing: $contractVerifier"
     }
