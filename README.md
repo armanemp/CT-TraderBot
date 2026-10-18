@@ -37,7 +37,7 @@ The only generated artifact intended for cTrader's local Robots directory is the
 
 `%USERPROFILE%\\Documents\\cAlgo\\Sources\\Robots\\`
 
-The pinned `cTrader.Automate` package builds the cBot artifact. Because this nested project layout currently emits an intermediate file named `src.algo`, the project has a post-build copy step that publishes it under the stable name `CTTraderBot.algo` to the Robots directory. The post-build step fails if the expected intermediate artifact is missing. Generated `.algo` files are ignored by Git and are never committed to the source repository.
+The pinned `cTrader.Automate` package builds and publishes the cBot. `Directory.Build.targets` sets the bundle filename and metadata paths immediately before the package extracts metadata, preventing the nested project layout from producing a misleading `src.algo` artifact name. A successful build must publish `CTTraderBot.algo` to the Robots directory; the build script verifies that exact file. Generated `.algo` files are ignored by Git and are never committed to the source repository.
 
 ## Build
 
