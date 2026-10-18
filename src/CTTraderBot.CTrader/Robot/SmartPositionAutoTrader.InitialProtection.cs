@@ -238,11 +238,14 @@ namespace cAlgo.Robots
             if (!result.IsSuccessful)
                 return RetryInitialStop(position, "Broker rejected initial SL. Position can remain unprotected until accepted.");
 
-            var state = new PositionState
-            {
-                InitialRiskDistance = Math.Abs(position.EntryPrice - stopPrice),
-                RiskDistanceEstimated = false
-            };
+            PositionState state;
+            if (!_states.TryGetValue(position.Id, out state) || state == null)
+                state = new PositionState();
+
+            // Update only the measured initial-R fields. Preserve the approved-risk budget and
+            // review flag so re-protecting a position cannot accidentally clear the entry guard.
+            state.InitialRiskDistance = Math.Abs(position.EntryPrice - stopPrice);
+            state.RiskDistanceEstimated = false;
             _states[position.Id] = state;
             SaveState(position, state);
             _lastWarningTime.Remove(position.Id);

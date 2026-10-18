@@ -265,32 +265,26 @@ namespace cAlgo.Robots
                 if (!IsPositionStillOpen(result.Position.Id) || _pendingEmergencyCloseIds.Contains(result.Position.Id))
                     return;
 
-                bool hasValidActualStop = result.Position.StopLoss.HasValue && IsStopOnRiskSide(result.Position);
+                bool hasValidActualStop = HasUsableStopLoss(result.Position);
                 double actualRiskDistance = hasValidActualStop
                     ? Math.Abs(result.Position.EntryPrice - result.Position.StopLoss.Value)
                     : stopDistance;
-                if (hasValidActualStop)
-                {
-                    double postFillRiskPips = actualRiskDistance / Symbol.PipSize + Math.Max(0.0, SizingSlippageReservePips);
-                    double postFillEstimatedLoss = Symbol.AmountRisked(volume, postFillRiskPips);
-                    if (IsFinitePositive(postFillEstimatedLoss) && postFillEstimatedLoss > maximumAllowedLoss * 1.05)
-                    {
-                        // AmountRisked is an estimate and the trade is already live. Do not liquidate
-                        // solely from an estimate, but make the over-budget condition visible regardless
-                        // of the optional diagnostic log setting.
-                        WarnThrottled(result.Position, String.Format(CultureInfo.InvariantCulture,
-                            "Post-fill SL geometry raises estimated risk to {0:F2} {1} ({2:F2}% equity), above the planned {3:F2}% budget. The broker SL remains attached; review this position.",
-                            postFillEstimatedLoss, Account.Asset.Name, postFillEstimatedLoss / equity * 100.0, allowedRiskPercent));
-                    }
-                }
+
                 var entryState = new PositionState
                 {
                     InitialRiskDistance = actualRiskDistance,
                     RiskDistanceEstimated = !hasValidActualStop,
+                    ApprovedRiskAmount = maximumAllowedLoss,
+                    RiskReviewRequired = false,
                     LastSuggestedTpPrice = 0,
                     LastTpDrawBarIndex = -1
                 };
                 _states[result.Position.Id] = entryState;
+                // A post-fill stop can be farther from entry than the planned pre-trade stop.
+                // Keep that structural/broker-valid stop; never force it inside the structure just
+                // to make the displayed risk match. Unknown or >5%-over-budget exposure pauses
+                // subsequent entries and remains flagged until the estimate becomes safe.
+                RefreshPostFillRiskReview(result.Position, entryState, false);
                 SaveState(result.Position, entryState);
             }
 
