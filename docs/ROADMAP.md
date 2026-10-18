@@ -29,7 +29,17 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - [x] Public parameter declarations/defaults compared against the reference: 67/67 declarations matched exactly.
 - [x] Critical trade-label, state-key, owner-key, TP-line/label prefixes and TP-guide-only marker counts matched between reference and split sources.
 - [x] Windows CI build passed with 0 warnings and 0 errors; artifact `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo` was verified. See [successful split/build run](https://github.com/armanemp/CT-TraderBot/actions/runs/39083607155) and [decomposition commit](https://github.com/armanemp/CT-TraderBot/commit/4ff8bf0).
+- [x] User's local PowerShell build succeeded after pull: 0 warnings, 0 errors; output published to `Documents\\cAlgo\\Sources\\Robots\\CTTraderBot.algo`.
 - **Exit gate passed for mechanical split.** This does not mean business logic has been extracted into standalone services or validated in a running cTrader instance; those remain future phases.
+
+## Phase 2.1 — First pure policy extraction and regression harness
+**Status: In progress — CI validation pending**
+- [x] Extract the existing adaptive risk-budget formula into `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`.
+- [x] Keep the cBot as an adapter: pass existing parameter values to the policy and use its result; do not change the calculation formula.
+- [x] Add a .NET 6 NUnit test project and boundary tests for score clamping, squared quality curve, adaptive-disabled behavior, maximum/minimum boundaries and hard ceiling.
+- [x] Add the test project to the solution and make both the Windows build workflow and `scripts/build-cbot.ps1` run the tests.
+- [ ] Confirm the new solution, unit tests and cBot artifact all pass together in one latest CI run and in the user's next local pull.
+- **Scope:** only the scalar risk-budget policy is covered. This is not yet a complete risk/sizing test suite.
 
 ## Phase 3 — Entry policy isolation
 - [ ] Separate M5 trend context, closed-bar setup and intrabar crossing policies.
