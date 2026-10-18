@@ -8,6 +8,18 @@
 4. **cTrader demo acceptance:** order submission, SL acceptance/rejection, fill price, sizing modes, restart recovery, chart UI and multiple instances.
 5. **Backtest/out-of-sample:** strategy robustness; these do not replace demo execution tests.
 
+## Implemented unit tests
+
+The first extracted policy is `CTTraderBot.Core.Policies.AdaptiveRiskBudgetPolicy`. The current test suite covers the squared quality curve, zero/one boundaries, below/above-range scores, disabled adaptive mode, a positive hard ceiling, a disabled ceiling, invalid bound ordering and non-finite quality input.
+
+Run locally:
+
+```powershell
+dotnet test .\tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj --configuration Release
+```
+
+The cBot build script and Windows CI execute this test project after the solution build. These tests verify the risk-budget calculation only; they do not prove order sizing, broker acceptance, realized loss or strategy profitability.
+
 ## Minimum scenario matrix
 
 - Long/short orders, including a price crossing planned SL between signal and fill.
