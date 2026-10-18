@@ -11,7 +11,7 @@ This is a source-level review of the current repository: all 11 split cBot sourc
 - CTTraderBot.algo was published to the cTrader Robots directory.
 - Windows CI passed for that same baseline: https://github.com/armanemp/CT-TraderBot/actions/runs/39084630747.
 
-The newest audit commits add code and tests beyond that validated point. Their CI/local result is pending; they must not be treated as compiled or validated until those runs finish. A successful build or unit test is not evidence of profitability.
+The code-audit commit 0f4b29a passed Windows CI with a successful Release build, zero warnings/errors, and 55/55 NUnit cases: https://github.com/armanemp/CT-TraderBot/actions/runs/39085123020. The latest repository commit after that run only updates documentation. A local build of the newly audited code is still pending, and runtime/demo acceptance is not implied. A successful build or unit test is not evidence of profitability.
 
 ## What the cBot does
 
@@ -70,10 +70,10 @@ A lease key attempts to decide which instance manages a position. Device LocalSt
 
 | Finding | Severity | Action/status |
 |---|---|---|
-| The strict M5 alignment option could still admit an opposing confirmed lower-TF structure break. | High; option contract violated | Fixed in commit e8e525b by adding M5TrendAlignmentPolicy and regression tests. Full audit commit validation pending. |
-| Non-finite market/indicator/configuration inputs were not uniformly rejected in core policy functions. | Medium; corrupted values could produce misleading decisions | Added finite checks to risk-budget, fresh-cross and M5-bias policies, with regression cases in commit e288317. Validation pending. |
+| The strict M5 alignment option could still admit an opposing confirmed lower-TF structure break. | High; option contract violated | Fixed in commit e8e525b by adding M5TrendAlignmentPolicy; covered by regression tests and included in the successful 55-test CI run at 0f4b29a. Local validation pending. |
+| Non-finite market/indicator/configuration inputs were not uniformly rejected in core policy functions. | Medium; corrupted values could produce misleading decisions | Added finite checks to risk-budget, fresh-cross and M5-bias policies in commit e288317; those changes passed as part of the 55-test CI run at 0f4b29a. |
 | Four-field legacy position state could make recovered initial R look confirmed when its original stop was no longer known. | Medium/high; misleading recovery confidence | Fixed in commit 0f4b29a: treat it as estimated, reject sub-tick risk, and upgrade the record. Restart acceptance pending. |
-| Shared-storage refresh/read/write failures could still use a stale lease cache or continue as if a write succeeded; shutdown could attempt to release from stale cache. | High for multi-instance safety | Changed to fail closed on storage errors and to leave leases untouched on failed shutdown refresh. This cannot remove the underlying non-atomic lease race. Runtime/demo validation pending. |
+| Shared-storage refresh/read/write failures could still use a stale lease cache or continue as if a write succeeded; shutdown could attempt to release from stale cache. | High for multi-instance safety | Changed to fail closed on storage errors and to leave leases untouched on failed shutdown refresh. The code compiled in CI; storage failure and concurrent-instance behavior remain runtime/demo validation items. The underlying lease is still non-atomic. |
 | README status still said that no unit-test project existed, and the roadmap validation count lagged the user's local results. | Low, documentation drift | Updated in this audit. |
 | Post-fill absolute structural alignment may increase nominal SL loss beyond the pre-trade risk budget; current behavior does not automatically reconcile every overrun. | High residual trading risk | Not silently changed without selecting and demo-testing a safe policy. Next risk phase item. |
 | State/ownership paths depend on cTrader LocalStorage and broker APIs that core unit tests cannot exercise. | High residual runtime risk | Requires restart, failed-storage, rejected-SL and multi-instance demo scenarios. |
