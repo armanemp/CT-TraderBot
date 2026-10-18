@@ -173,6 +173,7 @@ namespace cAlgo.Robots
             }
 
             double volume;
+            bool manualVolumeReducedForMinorOverrun = false;
             double freeMarginNow = Math.Max(0.0, Account.FreeMargin);
             if (_runtimeVolumeMode == MicroSwingPrecisionVolumeMode.AutoFreeMargin)
             {
@@ -224,11 +225,43 @@ namespace cAlgo.Robots
             }
             if (estimatedLoss > maximumAllowedLoss * 1.001)
             {
-                SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
-                    "Entry skipped: estimated stop, slippage and round-turn commission risk is {0:F2} {1}, above this setup's {2:F2} budget.",
-                    estimatedLoss, Account.Asset.Name, maximumAllowedLoss), true);
-                return;
+                // In Manual mode, a small (<=5%) risk-budget overrun caused by reserve/rounding
+                // differences is corrected by reducing volume to the largest broker-valid step
+                // within budget. Larger overruns still require the user to revise the requested lot.
+                if (_runtimeVolumeMode == MicroSwingPrecisionVolumeMode.ManualLots &&
+                    estimatedLoss <= maximumAllowedLoss * (1.0 + SmallManualRiskOverrunTolerance))
+                {
+                    double requestedUnits = volume;
+                    double adjustedUnits = GetMaximumVolumeWithinRiskBudget(
+                        signal.Value, requestedUnits, maximumAllowedLoss,
+                        stopAndSlippagePips, entryReference);
+
+                    if (adjustedUnits >= Symbol.VolumeInUnitsMin && adjustedUnits < requestedUnits)
+                    {
+                        volume = adjustedUnits;
+                        estimatedLoss = EstimateTotalEntryLoss(volume, stopAndSlippagePips, entryReference);
+                        manualVolumeReducedForMinorOverrun =
+                            IsFinitePositive(estimatedLoss) && estimatedLoss <= maximumAllowedLoss * 1.001;
+                    }
+                }
+
+                if (!IsFinitePositive(estimatedLoss) || estimatedLoss > maximumAllowedLoss * 1.001)
+                {
+                    SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
+                        "Entry skipped: estimated stop, slippage and round-turn commission risk is {0:F2} {1}, above this setup's {2:F2} budget. Reduce the selected volume or review the risk limits.",
+                        estimatedLoss, Account.Asset.Name, maximumAllowedLoss), true);
+                    return;
+                }
             }
+
+            bool usedCommissionFallbackForEntry = _lastCommissionEstimateUsedFallback;
+            string riskAdjustmentNotice = string.Empty;
+            if (usedCommissionFallbackForEntry)
+                riskAdjustmentNotice += String.Format(CultureInfo.InvariantCulture,
+                    " | conservative commission reserve used ({0:F1} pip-equivalent minimum on gold profile)",
+                    UnknownGoldCommissionFallbackPips);
+            if (manualVolumeReducedForMinorOverrun)
+                riskAdjustmentNotice += " | manual volume was reduced one or more broker steps to fit the approved risk budget";
 
             // Re-check live margin immediately before sending. Manual uses the requested volume
             // with a 10% free-margin reserve; auto keeps the user-configured reserve.
@@ -245,12 +278,15 @@ namespace cAlgo.Robots
                 return;
             }
 
+            bool riskEstimateNeedsAttention = usedCommissionFallbackForEntry || manualVolumeReducedForMinorOverrun;
             ReportEntryStatus(String.Format(CultureInfo.InvariantCulture,
-                "qualified: {0:F2} lots; estimated stop + slippage + round-turn commission risk {1:F2} {2}",
-                Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name));
+                "qualified: {0:F2} lots; estimated stop + slippage + round-turn commission risk {1:F2} {2}{3}",
+                Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name, riskAdjustmentNotice),
+                riskEstimateNeedsAttention);
             SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
-                "Ready: {0:F2} lots | estimated stop + slippage + round-turn commission risk {1:F2} {2} | required margin {3:F2}.",
-                Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name, requiredMargin), false);
+                "Ready: {0:F2} lots | estimated stop + slippage + round-turn commission risk {1:F2} {2} | required margin {3:F2}{4}.",
+                Symbol.VolumeInUnitsToQuantity(volume), estimatedLoss, Account.Asset.Name, requiredMargin, riskAdjustmentNotice),
+                riskEstimateNeedsAttention);
 
             string comment = "M5+" + LowerEntryTimeframe.ToString() + " precision | " + _runtimeVolumeMode.ToString() + " | TP guide only";
             // Consume the candle only when sending the order; filter failures do not block a later fresh trigger.
@@ -265,10 +301,11 @@ namespace cAlgo.Robots
             }
 
             _lastEntryBarIndex = _lowerBars.Count;
-            ReportEntryStatus("market order accepted; checking attached initial SL");
+            ReportEntryStatus("market order accepted; checking attached initial SL" + riskAdjustmentNotice,
+                riskEstimateNeedsAttention);
             SetVolumeNotice(String.Format(CultureInfo.InvariantCulture,
-                "Opened {0:F2} lots. Initial SL is attached; TP remains guide-only.",
-                Symbol.VolumeInUnitsToQuantity(volume)), false);
+                "Opened {0:F2} lots. Initial SL is attached; TP remains guide-only{1}.",
+                Symbol.VolumeInUnitsToQuantity(volume), riskAdjustmentNotice), riskEstimateNeedsAttention);
 
             if (result.Position != null)
             {
