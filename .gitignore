@@ -1,0 +1,33 @@
+# .NET build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+TestResults/
+coverage/
+
+# IDE / local state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# cTrader local artifacts and logs
+*.algo
+*.log
+*.cache
+.local/
+local.settings.json
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local source/API paths and secrets
+.env
+.env.*
+!.env.example
