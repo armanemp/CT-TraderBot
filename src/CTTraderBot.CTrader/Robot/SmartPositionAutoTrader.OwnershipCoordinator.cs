@@ -34,7 +34,10 @@ namespace cAlgo.Robots
         private bool TryAcquireManagementLease(Position position)
         {
             if (!ReloadSharedStorageIfNeeded(position))
+            {
+                _ownedPositionIds.Remove(position.Id);
                 return false;
+            }
 
             string key = GetOwnerKey(position.Id);
             OwnershipLease lease;
@@ -42,7 +45,10 @@ namespace cAlgo.Robots
 
             bool leaseExists = TryReadLease(key, out lease);
             if (!_sharedStorageHealthy)
+            {
+                _ownedPositionIds.Remove(position.Id);
                 return false;
+            }
 
             if (leaseExists)
             {
@@ -61,13 +67,19 @@ namespace cAlgo.Robots
 
                 bool alive = lease.ExpiryTicks > nowTicks;
                 if (alive && ManagerPriority <= lease.Priority)
+                {
+                    _ownedPositionIds.Remove(position.Id);
                     return false;
+                }
 
                 // Expired owner, or this instance has explicitly higher priority: take over.
             }
 
             if (!WriteLease(key))
+            {
+                _ownedPositionIds.Remove(position.Id);
                 return false;
+            }
 
             _ownedPositionIds.Add(position.Id);
             return true;
