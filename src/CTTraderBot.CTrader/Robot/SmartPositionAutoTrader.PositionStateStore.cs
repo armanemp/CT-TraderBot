@@ -30,6 +30,16 @@ namespace cAlgo.Robots
                 SetVolumeNotice("Position state could not be read. The approved risk budget is unknown; new entries remain paused while this position is open.", true);
             }
 
+            if (string.IsNullOrWhiteSpace(saved))
+            {
+                // This method is called only for a bot-labeled managed position. A missing key can
+                // mean that an earlier write failed or state was lost; do not silently substitute
+                // an estimated R and treat the original approved risk budget as known.
+                riskBudgetUnavailable = true;
+                WarnThrottled(position, "No persisted risk state was found for this managed position; its approved entry risk is unknown and new entries will remain paused until the position closes.");
+                SetVolumeNotice("Managed position has no persisted approved-risk state. New entries are paused until this position is closed or reconciled manually.", true);
+            }
+
             if (!string.IsNullOrWhiteSpace(saved))
             {
                 PositionRiskStateRecord restored;

@@ -17,7 +17,7 @@ The platform-independent tests cover:
 - Required M5 alignment: matching direction allowed; opposite/neutral signals blocked; soft mode delegates to the separate context decision.
 - Entry reward/risk screening uses the configured base R and is capped by the nearest valid forward barrier; it is deliberately independent from adaptive TP-guide extension.
 - Post-fill risk assessment returns WithinBudget, OverBudget, or Unknown; invalid/missing estimates never count as safe.
-- The cBot persists each new entry's approved loss budget in versioned v5 position state while still reading v2/v3/v4 and legacy 4-/5-field formats; malformed or unreadable saved risk state remains locked. Versioned state decoding/identity checks and sticky-flag round trips are unit-tested by the platform-independent codec.
+- The cBot persists each new entry's approved loss budget in versioned v5 position state while still reading v2/v3/v4 and legacy 4-/5-field formats; missing, malformed or unreadable state remains locked for a managed position. Versioned state decoding/identity checks and sticky-flag round trips are unit-tested by the platform-independent codec.
 - If a structural stop is crossed while automatic emergency close is disabled, a sticky manual-review lock survives restart; the bot does not recalculate/widen the initial stop or start new entries until that position is closed.
 - When the configured emergency-close path is triggered by a crossed intended stop, its sticky request is saved and retried after restart until closure is confirmed.
 - After fill, the risk estimate includes adverse entry-to-SL distance, the configured slippage reserve, and a round-turn commission estimate when available. If the SL is unusable, the estimate is unknown, or estimated downside risk is more than 5% above the approved budget, a risk-review flag is persisted and new entries are paused. The bot keeps the existing broker SL and does not force-close solely from an estimate.
@@ -43,7 +43,7 @@ The build script runs the test suite after compiling the solution and checks the
 - With two same-label instances, the non-owner refreshes persisted risk review state before a new entry decision; storage refresh failures fail closed. The device lease is still not an atomic lock, so concurrent races still require demo acceptance.
 - BE/trailing never loosens current protective SL.
 - Target guide reached with strong/weak momentum; no broker TP is accidentally attached.
-- Restart with valid, stale, malformed and missing state.
+- Restart with valid, stale, malformed and missing state; a missing state record for an already-managed bot position must not be silently treated as having an approved risk budget.
 - Two instances see the same position; lease reload/flush failures and expiry edges.
 - Chart input validation and shutdown cleanup.
 - Hedged versus netted account and exact-label isolation.
