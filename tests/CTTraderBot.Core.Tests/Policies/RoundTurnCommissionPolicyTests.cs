@@ -51,6 +51,39 @@ namespace CTTraderBot.Core.Tests.Policies
         }
 
         [Test]
+        public void UnknownCommissionUsesValidConservativeReserveInsteadOfBlockingRiskEstimate()
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(double.NaN, 7.5),
+                Is.EqualTo(7.5));
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(double.PositiveInfinity, 12.0),
+                Is.EqualTo(12.0));
+        }
+
+        [Test]
+        public void ExactCommissionEstimateTakesPrecedenceOverFallback()
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(3.25, 12.0),
+                Is.EqualTo(3.25));
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(0.0, 12.0),
+                Is.Zero);
+        }
+
+        [Test]
+        public void UnknownCommissionWithoutValidFallbackRemainsUnknown()
+        {
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(double.NaN, double.NaN),
+                Is.NaN);
+            Assert.That(
+                RoundTurnCommissionPolicy.ResolveRoundTurnCommissionCash(double.NaN, -1.0),
+                Is.NaN);
+        }
+
+        [Test]
         public void AddsBothSidesOfCommissionToStopAndSlippageRisk()
         {
             Assert.That(
