@@ -9,7 +9,7 @@ namespace CTTraderBot.Core.Tests.Policies
     {
         [TestCase(30.0, 0.10, 100000.0, 100000.0, BrokerCommissionBasis.UsdPerMillionUsdVolume, 3.0)]
         [TestCase(3.5, 0.20, 0.0, 0.0, BrokerCommissionBasis.UsdPerOneLot, 0.70)]
-        [TestCase(0.01, 0.0 + 1.0, 0.0, 150000.0, BrokerCommissionBasis.PercentageOfTradingVolume, 15.0)]
+        [TestCase(0.01, 1.0, 0.0, 150000.0, BrokerCommissionBasis.PercentageOfTradingVolume, 15.0)]
         [TestCase(2.2, 0.50, 0.0, 0.0, BrokerCommissionBasis.QuoteCurrencyPerOneLot, 1.10)]
         public void EstimatesOneWayCommissionForEachBrokerBasis(
             double rate,
