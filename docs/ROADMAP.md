@@ -100,7 +100,7 @@ Statuses: **Not started**, **In progress**, **Blocked**, **Verified**. File crea
 - **Exit gate:** valid/invalid input, toggles and shutdown cleanup are checked in cTrader.
 
 ## Phase 10 — Performance and acceptance
-- [x] Filter position lookups by exact cBot label and symbol and use `Positions.FindById` for existence checks, avoiding repeated account-wide scans per tick. This commit awaits CI/local validation.
+- [x] Filter position management and entry-capacity counts by exact cBot label and symbol, avoiding repeated account-wide scans per tick; use a filtered ID lookup because the pinned API's FindById expects int while persisted position IDs are long. This commit awaits CI/local validation.
 - [ ] Measure CPU/latency with realistic tick and position counts.
 - [ ] Run tests, compile, static review, backtest and demo acceptance scenarios.
 - [ ] Record known limitations and release checklist.
