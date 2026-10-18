@@ -28,3 +28,6 @@ jobs:
 
       - name: Build
         run: dotnet build .\CT-TraderBot.sln --configuration Release --no-restore
+
+      - name: Run core policy unit tests
+        run: dotnet test .\tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj --configuration Release --no-build --no-restore
