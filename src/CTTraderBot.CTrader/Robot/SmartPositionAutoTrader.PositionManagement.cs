@@ -39,22 +39,38 @@ namespace cAlgo.Robots
             if (position == null || !TryAcquireManagementLease(position))
                 return;
 
-            // If an intended initial SL was crossed before installation and the emergency close
-            // failed, keep retrying the close rather than silently recalculating a wider stop.
+            // If an intended SL was crossed before installation and the emergency close failed,
+            // keep retrying the close rather than calculating a wider replacement stop.
             if (_pendingEmergencyCloseIds.Contains(position.Id))
             {
                 TryCloseBreachedPosition(position);
                 return;
             }
 
-            // The SL attempt is deliberately immediate; the candle delay applies only to tightening
-            // a stop into profit, not to the initial protection.
-            if (!position.StopLoss.HasValue && !TrySetInitialStop(position))
-                return;
-
             var state = GetOrCreateState(position);
             if (state == null || state.InitialRiskDistance <= 0)
                 return;
+
+            // Load and evaluate the persisted guard before trying to recover protection. Missing
+            // protection pauses entries immediately; if it is restored successfully, assess again.
+            RefreshPostFillRiskReview(position, state);
+            if (!position.StopLoss.HasValue)
+            {
+                if (!TrySetInitialStop(position))
+                {
+                    RefreshPostFillRiskReview(position, state);
+                    return;
+                }
+                RefreshPostFillRiskReview(position, state);
+            }
+
+            // Do not trail/update guides from an SL that is absent, already crossed, or otherwise
+            // unusable at the live quote. The risk guard stays active until protection is verified.
+            if (!HasUsableStopLoss(position))
+            {
+                RefreshPostFillRiskReview(position, state);
+                return;
+            }
 
             UpdateSuggestedTpGuide(position, state);
 

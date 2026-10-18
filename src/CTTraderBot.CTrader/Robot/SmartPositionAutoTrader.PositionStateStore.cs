@@ -32,17 +32,36 @@ namespace cAlgo.Robots
                 var parts = saved.Split('|');
                 double storedEntry;
                 double storedRisk;
+                double storedApprovedRisk = 0.0;
                 long storedEntryTimeTicks;
-                // Four-field state predates the estimate flag; classify it as estimated rather
-                // than falsely claiming the original stop risk was confirmed.
                 bool storedEstimated = true;
-                bool estimateFieldValid = parts.Length == 4 ||
-                    (parts.Length == 5 && bool.TryParse(parts[4], out storedEstimated));
-                if ((parts.Length == 4 || parts.Length == 5) && estimateFieldValid &&
-                    double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
-                    double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
-                    string.Equals(parts[2], position.TradeType.ToString(), StringComparison.Ordinal) &&
-                    long.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedEntryTimeTicks) &&
+                bool storedReviewRequired = false;
+                bool isVersion2 = parts.Length == 8 && string.Equals(parts[0], "v2", StringComparison.Ordinal);
+                bool isLegacy = parts.Length == 4 || parts.Length == 5;
+
+                bool parsedFields = false;
+                if (isVersion2)
+                {
+                    parsedFields =
+                        bool.TryParse(parts[5], out storedEstimated) &&
+                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
+                        bool.TryParse(parts[7], out storedReviewRequired) &&
+                        !double.IsNaN(storedApprovedRisk) &&
+                        !double.IsInfinity(storedApprovedRisk) &&
+                        storedApprovedRisk >= 0.0;
+                }
+                else if (isLegacy)
+                {
+                    // Four-field records predate the estimate marker; five-field records contain it.
+                    parsedFields = parts.Length == 4 || bool.TryParse(parts[4], out storedEstimated);
+                }
+
+                int offset = isVersion2 ? 1 : 0;
+                if ((isVersion2 || isLegacy) && parsedFields &&
+                    double.TryParse(parts[offset], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
+                    double.TryParse(parts[offset + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
+                    string.Equals(parts[offset + 2], position.TradeType.ToString(), StringComparison.Ordinal) &&
+                    long.TryParse(parts[offset + 3], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedEntryTimeTicks) &&
                     Math.Abs(storedEntry - position.EntryPrice) <= Symbol.TickSize * 0.5 &&
                     storedEntryTimeTicks == position.EntryTime.Ticks &&
                     IsFinitePositive(storedRisk) &&
@@ -51,11 +70,13 @@ namespace cAlgo.Robots
                     state = new PositionState
                     {
                         InitialRiskDistance = storedRisk,
-                        RiskDistanceEstimated = storedEstimated
+                        RiskDistanceEstimated = storedEstimated,
+                        ApprovedRiskAmount = isVersion2 ? storedApprovedRisk : 0.0,
+                        RiskReviewRequired = isVersion2 && storedReviewRequired
                     };
                     _states[position.Id] = state;
-                    if (parts.Length == 4)
-                        SaveState(position, state); // Upgrade legacy state with the explicit estimate flag.
+                    if (!isVersion2)
+                        SaveState(position, state); // Upgrade legacy state to the versioned representation.
                     return state;
                 }
             }
@@ -96,9 +117,9 @@ namespace cAlgo.Robots
 
         private void SaveState(Position position, PositionState state)
         {
-            string value = string.Format(CultureInfo.InvariantCulture, "{0:R}|{1:R}|{2}|{3}|{4}",
+            string value = string.Format(CultureInfo.InvariantCulture, "v2|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}",
                 position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
-                state.RiskDistanceEstimated);
+                state.RiskDistanceEstimated, Math.Max(0.0, state.ApprovedRiskAmount), state.RiskReviewRequired);
             try
             {
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);

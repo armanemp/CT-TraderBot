@@ -49,11 +49,19 @@ namespace cAlgo.Robots
 
         private bool CanStartNewEntry()
         {
-            if (_sharedStorageHealthy && _positionStateStorageHealthy)
-                return true;
+            if (!_sharedStorageHealthy || !_positionStateStorageHealthy)
+            {
+                ReportEntryBlocked("position state or ownership storage is unhealthy; new entries are paused until storage recovery", true);
+                return false;
+            }
 
-            ReportEntryBlocked("position state or ownership storage is unhealthy; new entries are paused until storage recovery", true);
-            return false;
+            if (_riskReviewRequiredPositionIds.Count > 0)
+            {
+                ReportEntryBlocked("a managed position has unconfirmed protection or estimated downside risk above its approved budget; new entries are paused until risk returns within budget or the position is closed", true);
+                return false;
+            }
+
+            return true;
         }
     }
 }
