@@ -82,6 +82,11 @@ namespace CTTraderBot.Core.Policies
             return IsFiniteNonNegative(total) ? total : double.NaN;
         }
 
+        private static bool IsFinitePositive(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value) && value > 0.0;
+        }
+
         private static bool IsFiniteNonNegative(double value)
         {
             return !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0.0;
