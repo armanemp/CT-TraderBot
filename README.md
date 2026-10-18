@@ -29,21 +29,27 @@ docs/
   TESTING.md
 ```
 
+## Source and compiled cBot locations
+
+Keep this Git repository where it was cloned (for example `%USERPROFILE%\\Desktop\\CT-TraderBot`). **Do not move the source repository into cTrader's Robots folder.**
+
+The only generated artifact intended for cTrader's local Robots directory is the compiled `.algo` file:
+
+`%USERPROFILE%\\Documents\\cAlgo\\Sources\\Robots\\`
+
+The build configuration will use the official `cTrader.Automate` build/publish behavior so a successful cBot build generates the `.algo` artifact and publishes it to the appropriate Windows cTrader folder. Generated `.algo` files are ignored by Git and must not be committed to the source repository. If building without that package's publish behavior, copy only the final `.algo` artifact to the Robots directory.
+
 ## Build
 
-The pure core and unit tests target .NET 6. Run:
+The repository is currently an architecture/migration scaffold, not yet a complete compilable cBot. Do not attempt a build until the original source has been added and the cTrader project has been created.
+
+Once the projects are present, run the pure core tests:
 
 ```powershell
-dotnet test .\tests\CTTraderBot.Core.Tests\CTTraderBot.Core.Tests.csproj
+dotnet test .\\tests\\CTTraderBot.Core.Tests\\CTTraderBot.Core.Tests.csproj
 ```
 
-The cTrader integration project references the API assembly installed by cTrader. Pass its path explicitly when building:
-
-```powershell
-dotnet build .\src\CTTraderBot.CTrader\CTTraderBot.CTrader.csproj /p:CTraderApiPath="C:\Users\<user>\Documents\cAlgo\API\cAlgo.API.dll"
-```
-
-The API path is machine-specific; do not commit local absolute paths. Compile and smoke-test the Robot in cTrader Automate as well as with the command line.
+The cTrader integration project will reference the API/Automate package supported by the installed cTrader version. Any local API assembly path must be supplied as a local build property; do not commit machine-specific absolute paths. Compile and smoke-test the Robot in cTrader Automate as well as with the command line.
 
 ## Safety
 
