@@ -31,7 +31,7 @@ function Get-ParameterContracts {
         })
     }
 
-    return ,$contracts.ToArray()
+    return $contracts.ToArray()
 }
 
 $legacyContracts = @(Get-ParameterContracts -Path $legacyPath)
