@@ -152,35 +152,40 @@ namespace cAlgo.Robots
             string commissionAsset = Account.Asset.Name;
             if (Symbol.Commission > 0.0)
             {
+                BrokerCommissionBasis basis;
+                double tradedNotionalInUsd = 0.0;
                 switch (Symbol.CommissionType)
                 {
                     case SymbolCommissionType.UsdPerMillionUsdVolume:
-                        double tradedNotionalInUsd = ConvertAssetAmount(
+                        basis = BrokerCommissionBasis.UsdPerMillionUsdVolume;
+                        tradedNotionalInUsd = ConvertAssetAmount(
                             tradedNotionalInQuote, Symbol.QuoteAsset.Name, "USD");
                         if (!IsFinitePositive(tradedNotionalInUsd))
                             return double.NaN;
-                        oneWayCommission = Symbol.Commission * tradedNotionalInUsd / 1000000.0;
                         commissionAsset = "USD";
                         break;
 
                     case SymbolCommissionType.UsdPerOneLot:
-                        oneWayCommission = Symbol.Commission * lots;
+                        basis = BrokerCommissionBasis.UsdPerOneLot;
                         commissionAsset = "USD";
                         break;
 
                     case SymbolCommissionType.PercentageOfTradingVolume:
-                        oneWayCommission = tradedNotionalInQuote * Symbol.Commission / 100.0;
+                        basis = BrokerCommissionBasis.PercentageOfTradingVolume;
                         commissionAsset = Symbol.QuoteAsset.Name;
                         break;
 
                     case SymbolCommissionType.QuoteCurrencyPerOneLot:
-                        oneWayCommission = Symbol.Commission * lots;
+                        basis = BrokerCommissionBasis.QuoteCurrencyPerOneLot;
                         commissionAsset = Symbol.QuoteAsset.Name;
                         break;
 
                     default:
                         return double.NaN;
                 }
+
+                oneWayCommission = RoundTurnCommissionPolicy.EstimateOneWayCommission(
+                    Symbol.Commission, lots, tradedNotionalInUsd, tradedNotionalInQuote, basis);
             }
 
             if (!IsFiniteNonNegative(oneWayCommission))
