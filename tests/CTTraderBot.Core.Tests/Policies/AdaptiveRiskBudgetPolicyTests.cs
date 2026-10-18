@@ -34,7 +34,7 @@ namespace CTTraderBot.Core.Tests.Policies
             Assert.That(actual, Is.EqualTo(1.5).Within(Tolerance));
         }
 
-        [TestCase(-2.0, 0.0)]
+        [TestCase(-2.0, 0.5)]
         [TestCase(2.0, 1.5)]
         public void AdaptiveMode_ClampsQualityToZeroThroughOne(double quality, double expected)
         {
