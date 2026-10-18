@@ -4,7 +4,7 @@
 
 Use a **modular monolith** first. Keep one deployable cTrader Robot, but separate policy from platform effects. Do not introduce microservices, dependency-injection frameworks, or third-party runtime packages without a concrete need.
 
-The baseline is the user-provided `SmartPositionAutoTrader_M5_MicroSwingPrecision_HedgedVolume.cs`. The repository started empty, so the exact source must be captured before its implementation can be extracted without loss. Until that happens, this document defines the target and does not claim the Robot has been migrated.
+The reference baseline is stored at `legacy/reference/SmartPositionAutoTrader_M5_MicroSwingPrecision_HedgedVolume.cs`. The first mechanical pass split it into 11 C# files and was compiled in Windows CI and locally by the user. The source-to-local-reference byte-for-byte identity is still unverified. The split partial classes are an intermediate state; the target remains independently testable policies and thin cTrader adapters.
 
 ## Target dependency direction
 
