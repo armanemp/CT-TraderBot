@@ -4,7 +4,7 @@ A maintainable cTrader Automate cBot project for the SmartPosition M5 Micro-Swin
 
 ## Project status
 
-**Migration status:** the original single-file source is captured under legacy/reference; the 74-method behavior-preserving split has been compiled in Windows CI and locally. Platform-independent policies cover adaptive risk budgeting, fresh price crossings, M5 direction/alignment, entry reward/risk screening and protective-stop geometry, with an NUnit regression harness. The audit is still in progress: broker/runtime acceptance, full entry/protection policy extraction, and evidence-based strategy evaluation remain open. The legacy source remains the behavior baseline.
+**Migration status:** the original single-file source is captured under legacy/reference; the 74-method behavior-preserving split has been compiled in Windows CI and locally. Platform-independent policies cover adaptive risk budgeting, fresh price crossings, M5 direction/alignment, entry reward/risk screening and protective-stop geometry, with an NUnit regression harness. The audit is still in progress: broker/runtime acceptance, full entry/protection policy extraction, and evidence-based strategy evaluation remain open. Pre-trade volume sizing now includes an estimate of round-turn symbol commission, minimum commission and account-currency conversion in addition to stop distance and the slippage reserve. The legacy source remains the behavior baseline.
 
 ## Goals
 
@@ -69,6 +69,12 @@ git pull --ff-only origin main
 The build script first runs `scripts/verify-cbot-contract.ps1` to compare public parameter names, types and full attributes against the legacy reference, and verify that broker TP remains explicitly null. It then restores/builds `CT-TraderBot.sln`, runs NUnit tests, and verifies that `CTTraderBot.algo` was published to `%USERPROFILE%\Documents\cAlgo\Sources\Robots\`. The source repository remains on Desktop; only the generated `.algo` artifact is published to cTrader. The `.algo` output is ignored by Git.
 
 The .NET 6 NUnit project tests platform-independent policies. Run the build-and-test gate locally with .\scripts\build-cbot.ps1; it builds the solution, runs the unit tests, and verifies that CTTraderBot.algo was published to the Robots directory. Passing tests do not replace cTrader demo acceptance. The current state/lease design is for local desktop cTrader: official cTrader documentation says LocalStorage Reload/Flush are unsupported no-ops in Cloud, without an error. Cloud deployment must remain unsupported until the persistence/ownership design is replaced.
+
+## Demo/live behavior parity
+
+The cBot uses one strategy and execution code path for demo and live accounts; it does not turn strategy features on/off based on the account environment. Broker/account differences such as spread, available symbols, commission schedule, minimum volume, margin/leverage, stop distance, slippage and fill behavior can still change whether an order qualifies and how it executes. This is expected platform behavior, not a demo-only code branch.
+
+The strategy profile remains M5-centered and optimized for XAU/GOLD. The M5 chart requirement is intentional because chart bars drive the context, ATR, and stop-management logic. Non-gold use is available only through the explicit existing parameter and is not covered by the gold-focused validation evidence. Risk, volume, valid stop placement, emergency review, and storage-failure guards remain active in every account environment.
 
 ## Safety
 
