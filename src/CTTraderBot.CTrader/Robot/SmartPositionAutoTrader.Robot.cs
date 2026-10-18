@@ -284,6 +284,8 @@ namespace cAlgo.Robots
             public bool RiskReviewRequired;
             // True when a persisted/approved budget cannot be trusted; never auto-clear this guard.
             public bool RiskBudgetUnavailable;
+            // Persisted when a configured emergency close is required after price crosses the intended stop.
+            public bool EmergencyCloseRequired;
             public double LastSuggestedTpPrice;
             public bool LastSuggestedTpReached;
             public double LastTrendScore;

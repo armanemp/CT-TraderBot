@@ -9,7 +9,7 @@ namespace cAlgo.Robots
     {
         private const double PostFillRiskToleranceFraction = 0.05;
 
-        private void FlagRiskReview(Position position, string reason)
+        private void FlagRiskReview(Position position, string reason, bool emergencyCloseRequired = false)
         {
             if (position == null)
                 return;
@@ -21,6 +21,7 @@ namespace cAlgo.Robots
             if (state != null)
             {
                 state.RiskReviewRequired = true;
+                state.EmergencyCloseRequired = state.EmergencyCloseRequired || emergencyCloseRequired;
                 _states[position.Id] = state;
                 // This is an exceptional crossed-stop path. Persist even if the in-memory flag
                 // was already true, so a second instance/restart cannot miss the emergency review.
@@ -82,7 +83,12 @@ namespace cAlgo.Robots
             string reason = string.Empty;
             double estimatedLoss = double.NaN;
 
-            if (!HasUsableStopLoss(position))
+            if (state.EmergencyCloseRequired)
+            {
+                requiresReview = true;
+                reason = "the intended stop was crossed and emergency close is still required";
+            }
+            else if (!HasUsableStopLoss(position))
             {
                 requiresReview = true;
                 reason = "the position has no usable broker stop-loss";

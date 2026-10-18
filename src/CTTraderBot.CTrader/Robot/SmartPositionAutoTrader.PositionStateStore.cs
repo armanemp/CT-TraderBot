@@ -39,12 +39,26 @@ namespace cAlgo.Robots
                 bool storedEstimated = true;
                 bool storedReviewRequired = false;
                 bool storedBudgetUnavailable = false;
+                bool storedEmergencyCloseRequired = false;
+                bool isVersion4 = parts.Length == 10 && string.Equals(parts[0], "v4", StringComparison.Ordinal);
                 bool isVersion3 = parts.Length == 9 && string.Equals(parts[0], "v3", StringComparison.Ordinal);
                 bool isVersion2 = parts.Length == 8 && string.Equals(parts[0], "v2", StringComparison.Ordinal);
                 bool isLegacy = parts.Length == 4 || parts.Length == 5;
 
                 bool parsedFields = false;
-                if (isVersion3)
+                if (isVersion4)
+                {
+                    parsedFields =
+                        bool.TryParse(parts[5], out storedEstimated) &&
+                        double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
+                        bool.TryParse(parts[7], out storedReviewRequired) &&
+                        bool.TryParse(parts[8], out storedBudgetUnavailable) &&
+                        bool.TryParse(parts[9], out storedEmergencyCloseRequired) &&
+                        !double.IsNaN(storedApprovedRisk) &&
+                        !double.IsInfinity(storedApprovedRisk) &&
+                        storedApprovedRisk >= 0.0;
+                }
+                else if (isVersion3)
                 {
                     parsedFields =
                         bool.TryParse(parts[5], out storedEstimated) &&
@@ -57,7 +71,7 @@ namespace cAlgo.Robots
                 }
                 else if (isVersion2)
                 {
-                    // Accept the in-development v2 shape and immediately upgrade it to v3.
+                    // Accept the earlier v2 state shape and immediately upgrade it to v4.
                     parsedFields =
                         bool.TryParse(parts[5], out storedEstimated) &&
                         double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out storedApprovedRisk) &&
@@ -72,8 +86,8 @@ namespace cAlgo.Robots
                     parsedFields = parts.Length == 4 || bool.TryParse(parts[4], out storedEstimated);
                 }
 
-                int offset = isVersion3 || isVersion2 ? 1 : 0;
-                if ((isVersion3 || isVersion2 || isLegacy) && parsedFields &&
+                int offset = isVersion4 || isVersion3 || isVersion2 ? 1 : 0;
+                if ((isVersion4 || isVersion3 || isVersion2 || isLegacy) && parsedFields &&
                     double.TryParse(parts[offset], NumberStyles.Float, CultureInfo.InvariantCulture, out storedEntry) &&
                     double.TryParse(parts[offset + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out storedRisk) &&
                     string.Equals(parts[offset + 2], position.TradeType.ToString(), StringComparison.Ordinal) &&
@@ -87,13 +101,14 @@ namespace cAlgo.Robots
                     {
                         InitialRiskDistance = storedRisk,
                         RiskDistanceEstimated = storedEstimated,
-                        ApprovedRiskAmount = isVersion3 || isVersion2 ? storedApprovedRisk : 0.0,
-                        RiskReviewRequired = (isVersion3 || isVersion2) && storedReviewRequired,
-                        RiskBudgetUnavailable = isVersion3 && storedBudgetUnavailable
+                        ApprovedRiskAmount = isVersion4 || isVersion3 || isVersion2 ? storedApprovedRisk : 0.0,
+                        RiskReviewRequired = (isVersion4 || isVersion3 || isVersion2) && storedReviewRequired,
+                        RiskBudgetUnavailable = (isVersion4 || isVersion3) && storedBudgetUnavailable,
+                        EmergencyCloseRequired = isVersion4 && storedEmergencyCloseRequired
                     };
                     _states[position.Id] = state;
-                    if (!isVersion3)
-                        SaveState(position, state); // Upgrade v2/legacy state to the current versioned representation.
+                    if (!isVersion4)
+                        SaveState(position, state); // Upgrade v2/v3/legacy state to the current versioned representation.
                     return state;
                 }
             }
@@ -141,10 +156,10 @@ namespace cAlgo.Robots
 
         private void SaveState(Position position, PositionState state)
         {
-            string value = string.Format(CultureInfo.InvariantCulture, "v3|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}|{7}",
+            string value = string.Format(CultureInfo.InvariantCulture, "v4|{0:R}|{1:R}|{2}|{3}|{4}|{5:R}|{6}|{7}|{8}",
                 position.EntryPrice, state.InitialRiskDistance, position.TradeType, position.EntryTime.Ticks,
                 state.RiskDistanceEstimated, Math.Max(0.0, state.ApprovedRiskAmount), state.RiskReviewRequired,
-                state.RiskBudgetUnavailable);
+                state.RiskBudgetUnavailable, state.EmergencyCloseRequired);
             try
             {
                 LocalStorage.SetString(GetStateKey(position.Id), value, SharedScope);

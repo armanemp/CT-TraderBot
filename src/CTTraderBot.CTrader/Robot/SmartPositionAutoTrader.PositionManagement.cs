@@ -39,20 +39,28 @@ namespace cAlgo.Robots
             if (position == null || !TryAcquireManagementLease(position))
                 return;
 
-            // If an intended SL was crossed before installation and the emergency close failed,
-            // keep retrying the close rather than calculating a wider replacement stop.
+            var state = GetOrCreateState(position);
+            if (state == null)
+                return;
+
+            // A crossed-stop emergency request survives restart via v4 persisted state.
+            if (state.EmergencyCloseRequired)
+            {
+                _pendingEmergencyCloseIds.Add(position.Id);
+                _riskReviewRequiredPositionIds.Add(position.Id);
+            }
+
+            // Do not clear a crossed-stop lock just because the quote later recovers. Retry a
+            // configured emergency close until the position is confirmed closed.
             if (_pendingEmergencyCloseIds.Contains(position.Id))
             {
-                // A price-crossing emergency close is an unbounded-risk review state until the
-                // position is actually gone. Keep the entry gate closed on every retry tick.
                 _riskReviewRequiredPositionIds.Add(position.Id);
                 SetVolumeNotice("RISK GUARD: emergency close is pending because the intended stop level was crossed. New entries remain paused until closure is confirmed.", true);
                 TryCloseBreachedPosition(position);
                 return;
             }
 
-            var state = GetOrCreateState(position);
-            if (state == null || state.InitialRiskDistance <= 0)
+            if (state.InitialRiskDistance <= 0)
                 return;
 
             // Load and evaluate the persisted guard before trying to recover protection. Missing
