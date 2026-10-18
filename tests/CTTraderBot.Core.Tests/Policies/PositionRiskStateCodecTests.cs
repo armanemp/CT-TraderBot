@@ -138,7 +138,8 @@ namespace CTTraderBot.Core.Tests.Policies
         {
             PositionRiskStateRecord record = Sample();
             record.ApprovedRiskAmount = double.PositiveInfinity;
-            Assert.Throws<System.ArgumentException>(() => PositionRiskStateCodec.Serialize(record));
+            Assert.Throws<System.ArgumentException>(
+                (NUnit.Framework.TestDelegate)(() => { PositionRiskStateCodec.Serialize(record); }));
         }
     }
 }
