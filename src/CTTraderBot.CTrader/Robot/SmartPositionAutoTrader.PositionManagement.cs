@@ -43,6 +43,10 @@ namespace cAlgo.Robots
             // keep retrying the close rather than calculating a wider replacement stop.
             if (_pendingEmergencyCloseIds.Contains(position.Id))
             {
+                // A price-crossing emergency close is an unbounded-risk review state until the
+                // position is actually gone. Keep the entry gate closed on every retry tick.
+                _riskReviewRequiredPositionIds.Add(position.Id);
+                SetVolumeNotice("RISK GUARD: emergency close is pending because the intended stop level was crossed. New entries remain paused until closure is confirmed.", true);
                 TryCloseBreachedPosition(position);
                 return;
             }

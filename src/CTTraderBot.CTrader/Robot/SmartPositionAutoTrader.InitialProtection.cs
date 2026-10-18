@@ -32,6 +32,8 @@ namespace cAlgo.Robots
                 if (CloseIfInitialStopAlreadyCrossed)
                 {
                     _pendingEmergencyCloseIds.Add(position.Id);
+                    _riskReviewRequiredPositionIds.Add(position.Id);
+                    SetVolumeNotice("RISK GUARD: the intended structural stop was crossed after entry; emergency close is being retried and new entries are paused.", true);
                     TryCloseBreachedPosition(position);
                 }
                 return;
@@ -205,6 +207,8 @@ namespace cAlgo.Robots
                     return RetryInitialStop(position, "Price has already crossed the planned initial SL; not widening the stop. Enable emergency close or handle the position manually.");
 
                 _pendingEmergencyCloseIds.Add(position.Id);
+                _riskReviewRequiredPositionIds.Add(position.Id);
+                SetVolumeNotice("RISK GUARD: the intended initial stop was crossed before broker protection could be confirmed; emergency close is being retried and new entries are paused.", true);
                 TryCloseBreachedPosition(position);
                 return false;
             }
