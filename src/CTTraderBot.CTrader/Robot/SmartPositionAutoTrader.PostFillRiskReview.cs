@@ -9,7 +9,7 @@ namespace cAlgo.Robots
     {
         private const double PostFillRiskToleranceFraction = 0.05;
 
-        private void FlagRiskReview(Position position, string reason, bool emergencyCloseRequired = false)
+        private void FlagRiskReview(Position position, string reason, bool emergencyCloseRequired = false, bool stickyReviewRequired = false)
         {
             if (position == null)
                 return;
@@ -22,6 +22,7 @@ namespace cAlgo.Robots
             {
                 state.RiskReviewRequired = true;
                 state.EmergencyCloseRequired = state.EmergencyCloseRequired || emergencyCloseRequired;
+                state.RiskReviewSticky = state.RiskReviewSticky || stickyReviewRequired;
                 _states[position.Id] = state;
                 // This is an exceptional crossed-stop path. Persist even if the in-memory flag
                 // was already true, so a second instance/restart cannot miss the emergency review.
@@ -87,6 +88,11 @@ namespace cAlgo.Robots
             {
                 requiresReview = true;
                 reason = "the intended stop was crossed and emergency close is still required";
+            }
+            else if (state.RiskReviewSticky)
+            {
+                requiresReview = true;
+                reason = "the intended structural stop was crossed; manual review is required because automatic close is disabled";
             }
             else if (!HasUsableStopLoss(position))
             {

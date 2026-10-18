@@ -60,6 +60,16 @@ namespace cAlgo.Robots
                 return;
             }
 
+            if (state.RiskReviewSticky)
+            {
+                // Automatic close was disabled by configuration. Do not widen/recreate a stop
+                // after a missed structural level, and don't let the review lock auto-clear merely
+                // because the quote moved back. The operator must close/reconcile the position.
+                _riskReviewRequiredPositionIds.Add(position.Id);
+                RefreshPostFillRiskReview(position, state);
+                return;
+            }
+
             if (state.InitialRiskDistance <= 0)
                 return;
 

@@ -286,6 +286,8 @@ namespace cAlgo.Robots
             public bool RiskBudgetUnavailable;
             // Persisted when a configured emergency close is required after price crosses the intended stop.
             public bool EmergencyCloseRequired;
+            // Sticky manual-review latch for a crossed intended stop, even if auto-close is disabled.
+            public bool RiskReviewSticky;
             public double LastSuggestedTpPrice;
             public bool LastSuggestedTpReached;
             public double LastTrendScore;
